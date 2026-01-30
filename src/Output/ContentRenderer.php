@@ -58,7 +58,7 @@ class ContentRenderer {
 
         // Assemble output
         $output = $frontmatter . "\n";
-        $output .= '# ' . $title . "\n\n";
+        $output .= '# ' . $this->decode_entities($title) . "\n\n";
         $output .= $body;
 
         return $output;
@@ -139,10 +139,26 @@ class ContentRenderer {
      * @return string The escaped value.
      */
     private function escape_yaml(string $value): string {
+        // Decode HTML entities first (WordPress often returns encoded strings)
+        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
         // Escape backslashes first, then quotes
         $value = str_replace('\\', '\\\\', $value);
         $value = str_replace('"', '\\"', $value);
 
         return $value;
+    }
+
+    /**
+     * Decode HTML entities from a string.
+     *
+     * WordPress functions often return HTML-entity-encoded strings.
+     * This ensures clean markdown output.
+     *
+     * @param string $value The value to decode.
+     * @return string The decoded value.
+     */
+    private function decode_entities(string $value): string {
+        return html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 }
