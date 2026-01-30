@@ -12,7 +12,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **URL-01**: Plugin serves markdown at `/post-slug.md` URLs via WordPress rewrite rules
 - [x] **URL-02**: Plugin serves markdown when `Accept: text/markdown` header is present on original URL
 - [x] **URL-03**: Plugin adds `<link rel="alternate" type="text/markdown">` to post/page `<head>`
-- [ ] **URL-04**: Plugin serves markdown via `?format=markdown` query parameter as fallback
+- [x] **URL-04**: Plugin serves markdown via `?format=markdown` query parameter as fallback
 
 ### Content Output
 
@@ -30,7 +30,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **TECH-02**: Plugin processes shortcodes and blocks before HTML-to-markdown conversion
 - [x] **TECH-03**: Plugin sends `Content-Type: text/markdown; charset=UTF-8` header
 - [x] **TECH-04**: Plugin sends `Vary: Accept` header for cache compatibility
-- [ ] **TECH-05**: Plugin supports custom post types via filter hook
+- [x] **TECH-05**: Plugin supports custom post types via filter hook
 
 ### Infrastructure
 
@@ -73,7 +73,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | URL-01 | Phase 1 | Complete |
 | URL-02 | Phase 3 | Complete |
 | URL-03 | Phase 3 | Complete |
-| URL-04 | Phase 4 | Pending |
+| URL-04 | Phase 4 | Complete |
 | CONT-01 | Phase 2 | Complete |
 | CONT-02 | Phase 2 | Complete |
 | CONT-03 | Phase 2 | Complete |
@@ -85,7 +85,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TECH-02 | Phase 2 | Complete |
 | TECH-03 | Phase 3 | Complete |
 | TECH-04 | Phase 3 | Complete |
-| TECH-05 | Phase 4 | Pending |
+| TECH-05 | Phase 4 | Complete |
 | INFR-01 | Phase 1 | Complete |
 | INFR-02 | Phase 1 | Complete |
 | INFR-03 | Phase 1 | Complete |
@@ -97,4 +97,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-30*
-*Last updated: 2026-01-30 — Phase 3 complete*
+*Last updated: 2026-01-30 — Phase 4 complete, all v1 requirements satisfied*

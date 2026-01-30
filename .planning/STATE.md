@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-01-30)
 
 **Core value:** Every post and page should be accessible as clean markdown through a predictable URL pattern (`/post-slug.md`)
-**Current focus:** Phase 4 - Extensibility & Fallbacks
+**Current focus:** Milestone Complete
 
 ## Current Position
 
@@ -113,18 +113,29 @@ None.
 - AlternateLinkHandler class for wp_head alternate link injection
 - Canonical URL resolution for posts, pages, and archives
 
-## Phase 4 Progress
+## Phase 4 Verification
 
-**Plan 01:** Complete (04-01-SUMMARY.md)
-- Query parameter fallback (?format=markdown)
+**Status:** Passed (4/4 must-haves verified, re-verification after gap closure)
+**Report:** .planning/phases/04-extensibility-fallbacks/04-VERIFICATION.md
+
+**Key deliverables:**
+- Query parameter fallback (?format=markdown) in RewriteHandler
 - Filterable post type support via markdown_alternate_supported_post_types filter
-- Commits: c94a7c3, 67ec96e
+- Documentation in README.md (For Developers section, query parameter usage)
+- Documentation in readme.txt (FAQ updated, changelog updated)
+- Commits: c94a7c3, 67ec96e (04-01), 6744895, 25ccff4 (04-02)
 
-**Plan 02:** Complete (04-02-SUMMARY.md)
-- Documentation gap closure for Phase 4 features
-- README.md: Query parameter and developer sections added
-- readme.txt: FAQ and changelog updated
-- Commits: 6744895, 25ccff4
+## Milestone Status
+
+**v1 Milestone Complete**
+
+All 4 phases executed and verified:
+- Phase 1: Core Infrastructure & URL Routing ✓
+- Phase 2: Content Conversion & Metadata ✓
+- Phase 3: Content Negotiation & Discovery ✓
+- Phase 4: Extensibility & Fallbacks ✓
+
+All 19 v1 requirements satisfied.
 
 ## Session Continuity
 
