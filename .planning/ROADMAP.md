@@ -26,11 +26,11 @@ This WordPress plugin delivers markdown versions of posts and pages through dedi
   2. Visiting `/any-page-slug.md` returns markdown text (not 404)
   3. Plugin activates without errors on fresh WordPress install
   4. After deactivation, `.md` URLs return 404 (clean uninstall)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md — Project setup with Composer, plugin bootstrap, and documentation
+- [ ] 01-02-PLAN.md — URL routing with rewrite rules and markdown request handler
 
 ### Phase 2: Content Conversion & Metadata
 **Goal**: Markdown output is complete, properly formatted, and includes all post metadata
@@ -82,7 +82,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Core Infrastructure & URL Routing | 0/? | Not started | - |
+| 1. Core Infrastructure & URL Routing | 0/2 | Planned | - |
 | 2. Content Conversion & Metadata | 0/? | Not started | - |
 | 3. Content Negotiation & Discovery | 0/? | Not started | - |
 | 4. Extensibility & Fallbacks | 0/? | Not started | - |
