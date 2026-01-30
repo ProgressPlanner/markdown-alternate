@@ -57,6 +57,9 @@ class ComposerStaticInit30105965ef2b463e5c24db4489fbe8a0
         'League\\HTMLToMarkdown\\HtmlConverter' => __DIR__ . '/..' . '/league/html-to-markdown/src/HtmlConverter.php',
         'League\\HTMLToMarkdown\\HtmlConverterInterface' => __DIR__ . '/..' . '/league/html-to-markdown/src/HtmlConverterInterface.php',
         'League\\HTMLToMarkdown\\PreConverterInterface' => __DIR__ . '/..' . '/league/html-to-markdown/src/PreConverterInterface.php',
+        'MarkdownAlternate\\Converter\\MarkdownConverter' => __DIR__ . '/../..' . '/src/Converter/MarkdownConverter.php',
+        'MarkdownAlternate\\Discovery\\AlternateLinkHandler' => __DIR__ . '/../..' . '/src/Discovery/AlternateLinkHandler.php',
+        'MarkdownAlternate\\Output\\ContentRenderer' => __DIR__ . '/../..' . '/src/Output/ContentRenderer.php',
         'MarkdownAlternate\\Plugin' => __DIR__ . '/../..' . '/src/Plugin.php',
         'MarkdownAlternate\\Router\\RewriteHandler' => __DIR__ . '/../..' . '/src/Router/RewriteHandler.php',
     );

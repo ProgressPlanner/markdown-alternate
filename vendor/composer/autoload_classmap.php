@@ -34,6 +34,9 @@ return array(
     'League\\HTMLToMarkdown\\HtmlConverter' => $vendorDir . '/league/html-to-markdown/src/HtmlConverter.php',
     'League\\HTMLToMarkdown\\HtmlConverterInterface' => $vendorDir . '/league/html-to-markdown/src/HtmlConverterInterface.php',
     'League\\HTMLToMarkdown\\PreConverterInterface' => $vendorDir . '/league/html-to-markdown/src/PreConverterInterface.php',
+    'MarkdownAlternate\\Converter\\MarkdownConverter' => $baseDir . '/src/Converter/MarkdownConverter.php',
+    'MarkdownAlternate\\Discovery\\AlternateLinkHandler' => $baseDir . '/src/Discovery/AlternateLinkHandler.php',
+    'MarkdownAlternate\\Output\\ContentRenderer' => $baseDir . '/src/Output/ContentRenderer.php',
     'MarkdownAlternate\\Plugin' => $baseDir . '/src/Plugin.php',
     'MarkdownAlternate\\Router\\RewriteHandler' => $baseDir . '/src/Router/RewriteHandler.php',
 );
