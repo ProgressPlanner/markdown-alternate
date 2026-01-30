@@ -1,0 +1,69 @@
+=== Markdown Alternate ===
+Contributors: joostdevalk
+Tags: markdown, content, api, llm
+Requires at least: 6.0
+Tested up to: 6.7
+Requires PHP: 7.4
+Stable tag: 1.0.0
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
+Provides markdown versions of posts and pages via .md URLs.
+
+== Description ==
+
+Markdown Alternate exposes your WordPress content as clean markdown through predictable URLs. Simply append `.md` to any post or page URL to get the markdown version.
+
+This plugin is designed for:
+
+* LLMs consuming web content
+* Developers building tools that parse content
+* Users who prefer markdown over HTML
+
+**Features:**
+
+* Access any post at `/post-slug.md`
+* Access any page at `/page-slug.md`
+* Nested pages work: `/parent/child.md`
+* Date-based permalinks supported: `/2024/01/my-post.md`
+* Zero configuration required
+
+**Requirements:**
+
+* Pretty permalinks must be enabled (not "Plain" structure)
+* PHP 7.4 or higher
+* WordPress 6.0 or higher
+
+== Installation ==
+
+1. Upload the plugin files to `/wp-content/plugins/markdown-alternate/`
+2. Activate the plugin through the 'Plugins' screen in WordPress
+3. Visit any post or page URL with `.md` extension
+
+That's it! No configuration needed.
+
+== Frequently Asked Questions ==
+
+= Why do I get 404 errors on .md URLs? =
+
+Ensure pretty permalinks are enabled. Go to Settings > Permalinks and select any structure other than "Plain".
+
+= Do I need to configure anything? =
+
+No. The plugin works immediately after activation with zero configuration.
+
+= What content is included in the markdown output? =
+
+The markdown output includes the post title, publication date, author, featured image URL (if set), the post content converted to markdown, and categories/tags.
+
+= Does it work with custom post types? =
+
+Version 1.0 focuses on posts and pages only. Custom post type support may be added in future versions.
+
+== Changelog ==
+
+= 1.0.0 =
+* Initial release
+* Support for posts and pages
+* Clean .md URL endpoints
+* Content negotiation via Accept header
