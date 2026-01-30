@@ -58,7 +58,18 @@ The markdown output includes the post title, publication date, author, featured 
 
 = Does it work with custom post types? =
 
-Version 1.0 focuses on posts and pages only. Custom post type support may be added in future versions.
+Yes! By default, only posts and pages are supported. Developers can enable custom post types using a filter hook:
+
+`add_filter( 'markdown_alternate_supported_post_types', function( $types ) {
+    $types[] = 'your_custom_type';
+    return $types;
+} );`
+
+= What if my client cannot send Accept headers? =
+
+Use the `format` query parameter: `https://example.com/hello-world/?format=markdown`
+
+This works on any supported post URL. The value must be exactly `markdown` (lowercase).
 
 == Changelog ==
 
@@ -67,3 +78,5 @@ Version 1.0 focuses on posts and pages only. Custom post type support may be add
 * Support for posts and pages
 * Clean .md URL endpoints
 * Content negotiation via Accept header
+* Query parameter fallback via ?format=markdown
+* Custom post type support via filter hook
