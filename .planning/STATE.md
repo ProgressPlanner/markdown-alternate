@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-30)
 
 ## Current Position
 
-Phase: 3 of 4 complete (Content Negotiation & Discovery)
-Plan: 2 of 2 complete in Phase 3
-Status: Phase 3 verified, ready for Phase 4
-Last activity: 2026-01-30 — Phase 3 executed and verified
+Phase: 4 of 4 (Extensibility & Fallbacks)
+Plan: 1 of 2 complete in Phase 4
+Status: In progress
+Last activity: 2026-01-30 - Completed 04-01-PLAN.md
 
-Progress: [███████░░░] 75% (3/4 phases)
+Progress: [████████░░] 87.5% (7/8 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: 1.4 min
-- Total execution time: 0.14 hours
+- Total execution time: 0.16 hours
 
 **By Phase:**
 
@@ -30,9 +30,10 @@ Progress: [███████░░░] 75% (3/4 phases)
 | 1 | 2/2 | 3 min | 1.5 min |
 | 2 | 2/2 | 2.3 min | 1.2 min |
 | 3 | 2/2 | 4 min | 2 min |
+| 4 | 1/2 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (2 min), 02-01 (1 min), 02-02 (1.3 min), 03-01 (2 min), 03-02 (2 min)
+- Last 5 plans: 02-01 (1 min), 02-02 (1.3 min), 03-01 (2 min), 03-02 (2 min), 04-01 (2 min)
 - Trend: Stable
 
 *Updated after each plan completion*
@@ -65,6 +66,9 @@ Recent decisions affecting current work:
 - Singular content only for alternate links (archives skipped for focused scope)
 - Priority 5 for wp_head ensures early injection
 - Post type whitelist ['post', 'page'] for alternate links
+- Filter hook name: markdown_alternate_supported_post_types
+- Priority order: URL (.md) > query param (?format=markdown) > Accept header
+- Intentional code duplication in helper methods (filter is the contract)
 
 ### Pending Todos
 
@@ -109,8 +113,18 @@ None.
 - AlternateLinkHandler class for wp_head alternate link injection
 - Canonical URL resolution for posts, pages, and archives
 
+## Phase 4 Progress
+
+**Plan 01:** Complete (04-01-SUMMARY.md)
+- Query parameter fallback (?format=markdown)
+- Filterable post type support via markdown_alternate_supported_post_types filter
+- Commits: c94a7c3, 67ec96e
+
+**Plan 02:** Pending
+- Caching headers and considerations
+
 ## Session Continuity
 
-Last session: 2026-01-30T11:10:00Z
-Stopped at: Phase 3 complete, verified
+Last session: 2026-01-30T12:17:00Z
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None
