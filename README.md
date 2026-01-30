@@ -25,7 +25,7 @@ A WordPress plugin that provides markdown versions of posts and pages for LLMs a
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/joostdevalk/markdown-alternate.git
+git clone https://github.com/ProgressPlanner/markdown-alternate.git
 cd markdown-alternate
 composer install
 ```
@@ -83,6 +83,14 @@ tags:
 
 Post content converted to markdown...
 ```
+
+## Content Processing
+
+The plugin processes WordPress content to produce clean markdown:
+
+- **Code blocks**: Syntax highlighting markup (e.g., `<span class="hljs-keyword">`) added by plugins like Highlight.js or Prism is automatically stripped. The output contains only the raw code with language hints preserved for fenced code blocks.
+- **HTML entities**: Entities like `&amp;` and `&#8217;` in titles and metadata are decoded to their actual characters.
+- **Shortcodes and blocks**: Standard WordPress shortcodes and Gutenberg blocks are rendered before conversion.
 
 ## Requirements
 
