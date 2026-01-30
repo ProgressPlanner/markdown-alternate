@@ -42,11 +42,11 @@ Plans:
   3. Shortcodes in content are rendered (not raw `[shortcode]` tags in output)
   4. Gutenberg blocks are rendered (not raw `<!-- wp:block -->` comments in output)
   5. Posts without featured images omit that field (no "Featured Image: false")
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01-PLAN.md — Install league/html-to-markdown and create MarkdownConverter wrapper
+- [ ] 02-02-PLAN.md — Create ContentRenderer for frontmatter/body and wire into RewriteHandler
 
 ### Phase 3: Content Negotiation & Discovery
 **Goal**: Markdown is discoverable via HTTP headers and programmatically accessible via alternate links
@@ -83,7 +83,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Core Infrastructure & URL Routing | 2/2 | Complete | 2026-01-30 |
-| 2. Content Conversion & Metadata | 0/? | Not started | - |
+| 2. Content Conversion & Metadata | 0/2 | Not started | - |
 | 3. Content Negotiation & Discovery | 0/? | Not started | - |
 | 4. Extensibility & Fallbacks | 0/? | Not started | - |
 
