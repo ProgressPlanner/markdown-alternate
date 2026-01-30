@@ -8,6 +8,7 @@
 namespace MarkdownAlternate\Router;
 
 use WP_Post;
+use MarkdownAlternate\Output\ContentRenderer;
 
 /**
  * Handles URL rewriting and markdown request processing.
@@ -104,10 +105,12 @@ class RewriteHandler {
             exit;
         }
 
-        // Serve the markdown content
+        // Render and serve the markdown content
+        $renderer = new ContentRenderer();
+        $markdown = $renderer->render($post);
+
         header('Content-Type: text/markdown; charset=UTF-8');
-        echo '# ' . $post->post_title . "\n\n";
-        echo $post->post_content;
+        echo $markdown;
         exit;
     }
 
