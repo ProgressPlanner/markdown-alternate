@@ -52,6 +52,16 @@ Request markdown using the `Accept` header on the original URL:
 curl -H "Accept: text/markdown" https://example.com/hello-world/
 ```
 
+### Via Query Parameter
+
+For clients that cannot send custom headers, use the `format` query parameter:
+
+```bash
+curl https://example.com/hello-world/?format=markdown
+```
+
+Note: The value must be exactly `markdown` (lowercase, case-sensitive).
+
 ### Markdown Output Format
 
 ```markdown
@@ -95,6 +105,26 @@ markdown-alternate/
 composer install
 # Tests will be added in future versions
 ```
+
+## For Developers
+
+### Custom Post Type Support
+
+By default, only posts and pages serve markdown. To enable markdown for custom post types, use the `markdown_alternate_supported_post_types` filter:
+
+```php
+add_filter( 'markdown_alternate_supported_post_types', function( $types ) {
+    $types[] = 'book';      // Add your custom post type
+    $types[] = 'portfolio'; // Add multiple types
+    return $types;
+} );
+```
+
+Once added, the custom post type will:
+- Serve markdown at `.md` URLs (e.g., `/my-book.md`)
+- Respond to `Accept: text/markdown` headers
+- Respond to `?format=markdown` query parameter
+- Include `<link rel="alternate">` tag in HTML head
 
 ## License
 
