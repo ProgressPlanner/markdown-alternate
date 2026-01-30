@@ -7,6 +7,7 @@
 
 namespace MarkdownAlternate;
 
+use MarkdownAlternate\Discovery\AlternateLinkHandler;
 use MarkdownAlternate\Router\RewriteHandler;
 
 /**
@@ -29,6 +30,13 @@ class Plugin {
     private $router;
 
     /**
+     * Discovery handler instance.
+     *
+     * @var AlternateLinkHandler
+     */
+    private $discovery;
+
+    /**
      * Get plugin instance.
      *
      * @return Plugin
@@ -46,6 +54,9 @@ class Plugin {
     private function __construct() {
         $this->router = new RewriteHandler();
         $this->router->register();
+
+        $this->discovery = new AlternateLinkHandler();
+        $this->discovery->register();
     }
 
     /**
