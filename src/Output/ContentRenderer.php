@@ -60,7 +60,7 @@ class ContentRenderer {
         $body = $this->converter->convert($content);
 
         // Assemble output
-        $output = $frontmatter . "\n";
+        $output = $frontmatter . "\n\n";
         $output .= '# ' . $this->decode_entities($title) . "\n\n";
         $output .= $body;
 

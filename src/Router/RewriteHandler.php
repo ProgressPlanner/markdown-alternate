@@ -207,7 +207,7 @@ class RewriteHandler {
         $renderer = new ContentRenderer();
         $markdown = $renderer->render($post);
 
-        $this->set_response_headers($post);
+        $this->set_response_headers($post, $markdown);
         echo $markdown;
         exit;
     }
@@ -270,7 +270,7 @@ class RewriteHandler {
         $renderer = new ContentRenderer();
         $markdown = $renderer->render($post);
 
-        $this->set_response_headers($post);
+        $this->set_response_headers($post, $markdown);
         echo $markdown;
         exit;
     }
@@ -278,12 +278,14 @@ class RewriteHandler {
     /**
      * Set all required HTTP headers for markdown response.
      *
-     * Sets 200 status, Content-Type, Vary, Link (canonical), and X-Content-Type-Options headers.
+     * Sets 200 status, Content-Type, Vary, Link (canonical), X-Content-Type-Options,
+     * and X-Markdown-Tokens headers.
      *
-     * @param WP_Post $post The post being served.
+     * @param WP_Post $post     The post being served.
+     * @param string  $markdown The rendered markdown content.
      * @return void
      */
-    private function set_response_headers(WP_Post $post): void {
+    private function set_response_headers(WP_Post $post, string $markdown): void {
         // Override any 404 status WordPress may have set
         status_header(200);
 
@@ -299,6 +301,9 @@ class RewriteHandler {
 
         // From CONTEXT.md: Security header to prevent MIME sniffing
         header('X-Content-Type-Options: nosniff');
+
+        // Estimated token count for the markdown content (~4 chars per token)
+        header('X-Markdown-Tokens: ' . (int) (strlen($markdown) / 4));
     }
 
     /**
