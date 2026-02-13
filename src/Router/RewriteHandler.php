@@ -92,29 +92,32 @@ class RewriteHandler {
             return;
         }
 
-        $slug = $matches[1];
+        // Strip .md to get the original URL path, let WordPress resolve it
+        $clean_url = home_url('/' . $matches[1]);
+        $post_id   = url_to_postid($clean_url);
 
-        // Find post by slug - handles both posts and pages
-        global $wpdb;
-        $post_row = $wpdb->get_row($wpdb->prepare(
-            "SELECT ID, post_type FROM {$wpdb->posts}
-             WHERE post_name = %s
-             AND post_status = 'publish'
-             AND post_type IN (" . implode(',', array_fill(0, count($this->get_supported_post_types()), '%s')) . ")
-             LIMIT 1",
-            array_merge([$slug], $this->get_supported_post_types())
-        ));
-
-        if (!$post_row) {
+        if (!$post_id) {
             return; // Let WordPress show its normal 404
         }
 
-        // Get full post object and cache it for handle_markdown_request
-        $this->markdown_post = get_post($post_row->ID);
+        $post = get_post($post_id);
+
+        if (!$post || $post->post_status !== 'publish') {
+            return;
+        }
+
+        if (!$this->is_supported_post_type($post->post_type)) {
+            return;
+        }
+
+        // Cache post for handle_markdown_request
+        $this->markdown_post = $post;
 
         // Set query vars for WordPress
-        $wp->query_vars['p'] = $post_row->ID;
+        $wp->query_vars['p']                = $post->ID;
         $wp->query_vars['markdown_request'] = '1';
+        // Remove incorrect pagename that the rewrite rule may have set
+        unset($wp->query_vars['pagename']);
     }
 
     /**
