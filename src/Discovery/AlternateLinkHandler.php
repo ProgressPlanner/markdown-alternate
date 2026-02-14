@@ -78,12 +78,35 @@ class AlternateLinkHandler {
         }
 
         // Build the .md URL.
-        $md_url = rtrim( get_permalink( $post ), '/' ) . '.md';
+        $md_url = $this->build_markdown_url( $post );
 
         // Output the alternate link tag.
         printf(
             '<link rel="alternate" type="text/markdown" href="%s" />' . "\n",
             esc_url( $md_url )
         );
+    }
+
+    /**
+     * Build the markdown URL for a given post.
+     *
+     * For the static front page, the permalink is the site root (e.g. https://example.com/)
+     * so appending .md would produce an invalid URL. Instead, we use a filterable
+     * slug (default "index") to produce e.g. https://example.com/index.md.
+     *
+     * @param \WP_Post $post The post to build the URL for.
+     * @return string The markdown URL.
+     */
+    private function build_markdown_url( \WP_Post $post ): string {
+        $permalink = get_permalink( $post );
+
+        // Detect if this is the static front page by comparing to site URL.
+        $site_url = trailingslashit( home_url() );
+        if ( trailingslashit( $permalink ) === $site_url ) {
+            $front_slug = apply_filters( 'markdown_alternate_front_page_slug', 'index' );
+            return $site_url . $front_slug . '.md';
+        }
+
+        return rtrim( $permalink, '/' ) . '.md';
     }
 }

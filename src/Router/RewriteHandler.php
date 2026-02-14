@@ -94,6 +94,21 @@ class RewriteHandler {
 
         $slug = $matches[1];
 
+        // Check if this is the front page slug (default "index", filterable).
+        $front_slug = apply_filters('markdown_alternate_front_page_slug', 'index');
+        if ($slug === $front_slug) {
+            $front_page_id = (int) get_option('page_on_front');
+            if ($front_page_id && get_option('show_on_front') === 'page') {
+                $front_page = get_post($front_page_id);
+                if ($front_page && $front_page->post_status === 'publish' && $this->is_supported_post_type($front_page->post_type)) {
+                    $this->markdown_post = $front_page;
+                    $wp->query_vars['p'] = $front_page_id;
+                    $wp->query_vars['markdown_request'] = '1';
+                    return;
+                }
+            }
+        }
+
         // Find post by slug - handles both posts and pages
         global $wpdb;
         $post_row = $wpdb->get_row($wpdb->prepare(
@@ -332,8 +347,14 @@ class RewriteHandler {
             return;
         }
 
-        // Build markdown URL
-        $md_url = rtrim($canonical, '/') . '.md';
+        // Build markdown URL — detect front page to avoid invalid domain.md URL.
+        $site_url = trailingslashit(home_url());
+        if (trailingslashit($canonical) === $site_url) {
+            $front_slug = apply_filters('markdown_alternate_front_page_slug', 'index');
+            $md_url = $site_url . $front_slug . '.md';
+        } else {
+            $md_url = rtrim($canonical, '/') . '.md';
+        }
 
         // 303 See Other redirect with Vary header for caching
         status_header(303);
