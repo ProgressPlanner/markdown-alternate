@@ -328,7 +328,7 @@ fi
 # ============================================================================
 
 ensure_labels_exist() {
-    local labels=("in-progress:0e8a16:Issue is being processed by automation" "needs-info:d876e3:Waiting for more information")
+    local labels=("approved:0e8a16:Issue approved for automated processing" "in-progress:0e8a16:Issue is being processed by automation" "needs-info:d876e3:Waiting for more information")
 
     for entry in "${labels[@]}"; do
         local name="${entry%%:*}"
@@ -1118,6 +1118,28 @@ Follow the optimization plan above. The plan was created by a senior engineer wh
 }
 
 # ============================================================================
+# get_issues_with_open_prs — returns issue numbers that already have open PRs
+# ============================================================================
+
+get_issues_with_open_prs() {
+    local prs
+    prs=$(gh pr list --repo "$GITHUB_REPO" --state open --json headRefName,body --limit 100 2>/dev/null)
+    if [ $? -ne 0 ] || [ -z "$prs" ]; then
+        echo ""
+        return
+    fi
+
+    # Extract issue numbers from branch names (issue/N-...) and PR bodies (Closes #N, Fixes #N, Resolves #N)
+    local from_branches
+    from_branches=$(echo "$prs" | jq -r '.[].headRefName' | grep -oE '^issue/[0-9]+' | grep -oE '[0-9]+')
+
+    local from_bodies
+    from_bodies=$(echo "$prs" | jq -r '.[].body // ""' | grep -oiE '(closes|fixes|resolves) #[0-9]+' | grep -oE '[0-9]+')
+
+    echo -e "${from_branches}\n${from_bodies}" | sort -un | tr '\n' ' '
+}
+
+# ============================================================================
 # fetch_issue — get an issue from GitHub (specific or oldest open)
 # ============================================================================
 
@@ -1136,8 +1158,22 @@ fetch_issue() {
             return
         fi
 
-        # Filter out issues with in-progress or needs-info labels, take oldest
-        echo "$all_issues" | jq '[.[] | select(.labels | map(.name) | (contains(["in-progress"]) or contains(["needs-info"])) | not)] | sort_by(.createdAt) | .[0] // empty'
+        # Get issue numbers that already have open PRs
+        local pr_issues
+        pr_issues=$(get_issues_with_open_prs)
+
+        local exclude_json="[]"
+        if [ -n "$(echo "$pr_issues" | tr -d '[:space:]')" ]; then
+            exclude_json=$(echo "$pr_issues" | tr ' ' '\n' | grep -v '^$' | jq -R 'tonumber' | jq -s '.')
+        fi
+
+        # Require approved label, exclude in-progress/needs-info labels and issues with open PRs
+        echo "$all_issues" | jq --argjson exclude "$exclude_json" \
+            '[.[] | select(
+                (.labels | map(.name) | contains(["approved"]))
+                and (.labels | map(.name) | (contains(["in-progress"]) or contains(["needs-info"])) | not)
+                and (.number as $n | $exclude | index($n) | not)
+            )] | sort_by(.createdAt) | .[0] // empty'
     fi
 }
 
