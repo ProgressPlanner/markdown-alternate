@@ -98,6 +98,7 @@ class RewriteHandler {
         // 1. Try replacing .md with common extensions (.html, .htm, .php, .aspx, .asp)
         // 2. Try without any extension (original behavior)
         $extensions_to_try = ['.html', '.htm', '.php', '.aspx', '.asp', ''];
+        $post_id = 0;
 
         foreach ($extensions_to_try as $ext) {
             $clean_url = home_url('/' . $path_without_md . $ext);
@@ -331,6 +332,19 @@ class RewriteHandler {
      * @return string The markdown URL.
      */
     private function permalink_to_markdown_url(string $permalink): string {
+        return self::permalink_to_markdown_url_static($permalink);
+    }
+
+    /**
+     * Convert a permalink to a markdown URL (static helper).
+     *
+     * Shared logic for converting permalinks to markdown URLs.
+     * Used by both RewriteHandler and AlternateLinkHandler.
+     *
+     * @param string $permalink The permalink URL.
+     * @return string The markdown URL.
+     */
+    public static function permalink_to_markdown_url_static(string $permalink): string {
         // Check if permalink ends with a file extension
         // Common extensions: .html, .htm, .php, .aspx, .asp
         if (preg_match('/\.(html?|php|aspx?)$/i', $permalink)) {
