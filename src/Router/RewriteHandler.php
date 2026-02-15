@@ -92,9 +92,21 @@ class RewriteHandler {
             return;
         }
 
-        // Strip .md to get the original URL path, let WordPress resolve it
-        $clean_url = home_url('/' . $matches[1]);
-        $post_id   = url_to_postid($clean_url);
+        $path_without_md = $matches[1];
+
+        // Try to resolve the post by trying different permalink structures
+        // 1. Try replacing .md with common extensions (.html, .htm, .php, .aspx, .asp)
+        // 2. Try without any extension (original behavior)
+        $extensions_to_try = ['.html', '.htm', '.php', '.aspx', '.asp', ''];
+
+        foreach ($extensions_to_try as $ext) {
+            $clean_url = home_url('/' . $path_without_md . $ext);
+            $post_id   = url_to_postid($clean_url);
+
+            if ($post_id) {
+                break; // Found a match
+            }
+        }
 
         if (!$post_id) {
             return; // Let WordPress show its normal 404
@@ -310,6 +322,27 @@ class RewriteHandler {
     }
 
     /**
+     * Convert a permalink to a markdown URL.
+     *
+     * Handles permalink structures with file extensions (e.g., .html, .htm)
+     * by replacing them with .md. For extension-less URLs, appends .md.
+     *
+     * @param string $permalink The permalink URL.
+     * @return string The markdown URL.
+     */
+    private function permalink_to_markdown_url(string $permalink): string {
+        // Check if permalink ends with a file extension
+        // Common extensions: .html, .htm, .php, .aspx, .asp
+        if (preg_match('/\.(html?|php|aspx?)$/i', $permalink)) {
+            // Replace the extension with .md
+            return preg_replace('/\.(html?|php|aspx?)$/i', '.md', $permalink);
+        }
+
+        // No extension found - append .md (trim trailing slash first)
+        return rtrim($permalink, '/') . '.md';
+    }
+
+    /**
      * Handle Accept header content negotiation.
      *
      * Redirects to .md URL when Accept: text/markdown is present on HTML URLs.
@@ -336,7 +369,7 @@ class RewriteHandler {
         }
 
         // Build markdown URL
-        $md_url = rtrim($canonical, '/') . '.md';
+        $md_url = $this->permalink_to_markdown_url($canonical);
 
         // 303 See Other redirect with Vary header for caching
         status_header(303);

@@ -48,6 +48,29 @@ class AlternateLinkHandler {
     }
 
     /**
+     * Convert a post's permalink to a markdown URL.
+     *
+     * Handles permalink structures with file extensions (e.g., .html, .htm)
+     * by replacing them with .md. For extension-less URLs, appends .md.
+     *
+     * @param \WP_Post $post The post object.
+     * @return string The markdown URL.
+     */
+    private function get_markdown_url( \WP_Post $post ): string {
+        $permalink = get_permalink( $post );
+
+        // Check if permalink ends with a file extension
+        // Common extensions: .html, .htm, .php, .aspx, .asp
+        if ( preg_match('/\.(html?|php|aspx?)$/i', $permalink) ) {
+            // Replace the extension with .md
+            return preg_replace('/\.(html?|php|aspx?)$/i', '.md', $permalink);
+        }
+
+        // No extension found - append .md (trim trailing slash first)
+        return rtrim( $permalink, '/' ) . '.md';
+    }
+
+    /**
      * Output alternate link tag for markdown version.
      *
      * Only outputs for published posts and pages (supported post types).
@@ -78,7 +101,7 @@ class AlternateLinkHandler {
         }
 
         // Build the .md URL.
-        $md_url = rtrim( get_permalink( $post ), '/' ) . '.md';
+        $md_url = $this->get_markdown_url( $post );
 
         // Output the alternate link tag.
         printf(
