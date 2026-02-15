@@ -46,6 +46,13 @@ class RewriteHandler {
      * @return void
      */
     public function add_rewrite_rules(): void {
+        // Specific rule for index.md (front page)
+        add_rewrite_rule(
+            '^index\.md$',
+            'index.php?pagename=index&markdown_request=1',
+            'top'
+        );
+
         // Non-greedy pattern to capture nested page slugs correctly
         add_rewrite_rule(
             '(.+?)\.md$',
@@ -92,12 +99,23 @@ class RewriteHandler {
             return;
         }
 
-        // Strip .md to get the original URL path, let WordPress resolve it
-        $clean_url = home_url('/' . $matches[1]);
-        $post_id   = url_to_postid($clean_url);
+        // Handle /index.md as the front page
+        if ($matches[1] === 'index') {
+            $page_on_front = get_option('page_on_front');
+            if ($page_on_front) {
+                $post_id = (int) $page_on_front;
+            } else {
+                // No static front page set - let WordPress show its normal behavior
+                return;
+            }
+        } else {
+            // Strip .md to get the original URL path, let WordPress resolve it
+            $clean_url = home_url('/' . $matches[1]);
+            $post_id   = url_to_postid($clean_url);
 
-        if (!$post_id) {
-            return; // Let WordPress show its normal 404
+            if (!$post_id) {
+                return; // Let WordPress show its normal 404
+            }
         }
 
         $post = get_post($post_id);
@@ -336,13 +354,35 @@ class RewriteHandler {
         }
 
         // Build markdown URL
-        $md_url = rtrim($canonical, '/') . '.md';
+        $md_url = $this->convert_to_markdown_url($canonical);
 
         // 303 See Other redirect with Vary header for caching
         status_header(303);
         header('Vary: Accept');
         header('Location: ' . $md_url);
         exit;
+    }
+
+    /**
+     * Convert a permalink to a markdown URL.
+     *
+     * Handles special case for front page to avoid .com.md URLs.
+     *
+     * @param string $permalink The permalink to convert.
+     * @return string The markdown URL.
+     */
+    private function convert_to_markdown_url(string $permalink): string {
+        // Normalize both URLs by removing trailing slashes for comparison
+        $normalized_permalink = rtrim($permalink, '/');
+        $normalized_home      = rtrim(home_url('/'), '/');
+
+        // If this is the front page, use /index.md
+        if ($normalized_permalink === $normalized_home) {
+            return home_url('/index.md');
+        }
+
+        // Otherwise, append .md to the permalink
+        return $normalized_permalink . '.md';
     }
 
     /**
