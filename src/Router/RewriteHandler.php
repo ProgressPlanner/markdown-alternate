@@ -24,6 +24,13 @@ class RewriteHandler {
     private ?WP_Post $markdown_post = null;
 
     /**
+     * Cached ContentRenderer instance.
+     *
+     * @var ContentRenderer|null
+     */
+    private ?ContentRenderer $renderer = null;
+
+    /**
      * Register all hooks for URL routing.
      *
      * @return void
@@ -134,6 +141,58 @@ class RewriteHandler {
     }
 
     /**
+     * Get cached ContentRenderer instance.
+     *
+     * @return ContentRenderer The renderer instance.
+     */
+    private function get_renderer(): ContentRenderer {
+        if ($this->renderer === null) {
+            $this->renderer = new ContentRenderer();
+        }
+
+        return $this->renderer;
+    }
+
+    /**
+     * Validate post for markdown output.
+     *
+     * @param WP_Post $post The post to validate.
+     * @return bool True if valid for markdown output, false otherwise.
+     */
+    private function validate_post_for_markdown(WP_Post $post): bool {
+        if (!PostTypeSupport::is_supported($post->post_type)) {
+            return false;
+        }
+
+        if (get_post_status($post) !== 'publish') {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Serve markdown response for a post.
+     *
+     * @param WP_Post $post The post to serve.
+     * @return void
+     */
+    private function serve_markdown_response(WP_Post $post): void {
+        if (post_password_required($post)) {
+            status_header(403);
+            header('Content-Type: text/plain; charset=UTF-8');
+            echo 'This content is password protected.';
+            exit;
+        }
+
+        $markdown = $this->get_renderer()->render($post);
+
+        $this->set_response_headers($post, $markdown);
+        echo $markdown;
+        exit;
+    }
+
+    /**
      * Handle format query parameter fallback.
      *
      * Serves markdown when ?format=markdown is present on singular content.
@@ -142,55 +201,29 @@ class RewriteHandler {
      * @return void
      */
     public function handle_format_parameter(): void {
-        // Skip if already a markdown request (URL wins over query parameter)
         if (get_query_var('markdown_request')) {
             return;
         }
 
-        // Check for format=markdown query parameter (case-sensitive, strict equality)
-        $format = get_query_var('format');
-        if ($format !== 'markdown') {
+        if (get_query_var('format') !== 'markdown') {
             return;
         }
 
-        // Only for singular content
         if (!is_singular()) {
             return;
         }
 
-        // Get the queried object
         $post = get_queried_object();
 
-        // Validate post exists and is a WP_Post
         if (!$post instanceof WP_Post) {
             return;
         }
 
-        // Check post type - only serve supported post types
-        if (!PostTypeSupport::is_supported($post->post_type)) {
+        if (!$this->validate_post_for_markdown($post)) {
             return;
         }
 
-        // Check post status - only serve published posts
-        if (get_post_status($post) !== 'publish') {
-            return;
-        }
-
-        // Check password protection
-        if (post_password_required($post)) {
-            status_header(403);
-            header('Content-Type: text/plain; charset=UTF-8');
-            echo 'This content is password protected.';
-            exit;
-        }
-
-        // Render and serve the markdown content
-        $renderer = new ContentRenderer();
-        $markdown = $renderer->render($post);
-
-        $this->set_response_headers($post, $markdown);
-        echo $markdown;
-        exit;
+        $this->serve_markdown_response($post);
     }
 
     /**
@@ -201,59 +234,32 @@ class RewriteHandler {
      * @return void
      */
     public function handle_markdown_request(): void {
-        // Check if this is a markdown request
         if (!get_query_var('markdown_request')) {
             return;
         }
 
-        // Get the request URI
         $request_uri = $_SERVER['REQUEST_URI'] ?? '';
 
-        // Enforce lowercase .md extension - let WP 404 if wrong case
-        if (!preg_match('/\.md$/', $request_uri) && preg_match('/\.md$/i', $request_uri)) {
+        if (str_ends_with($request_uri, '.MD') || preg_match('/\.[Mm][Dd]$/', $request_uri)) {
             return;
         }
 
-        // Handle trailing slash redirect: /post-slug.md/ -> /post-slug.md
-        if (preg_match('/\.md\/$/', $request_uri)) {
-            $redirect_url = rtrim($request_uri, '/');
-            wp_redirect($redirect_url, 301);
+        if (str_ends_with($request_uri, '.md/')) {
+            wp_redirect(rtrim($request_uri, '/'), 301);
             exit;
         }
 
-        // Get post - use cached post from parse_markdown_url (Nginx) or queried object (Apache)
         $post = $this->markdown_post ?? get_queried_object();
 
-        // Validate post exists and is a WP_Post
         if (!$post instanceof WP_Post) {
             return;
         }
 
-        // Check post type - only serve supported post types
-        if (!PostTypeSupport::is_supported($post->post_type)) {
+        if (!$this->validate_post_for_markdown($post)) {
             return;
         }
 
-        // Check post status - only serve published posts
-        if (get_post_status($post) !== 'publish') {
-            return;
-        }
-
-        // Check password protection
-        if (post_password_required($post)) {
-            status_header(403);
-            header('Content-Type: text/plain; charset=UTF-8');
-            echo 'This content is password protected.';
-            exit;
-        }
-
-        // Render and serve the markdown content
-        $renderer = new ContentRenderer();
-        $markdown = $renderer->render($post);
-
-        $this->set_response_headers($post, $markdown);
-        echo $markdown;
-        exit;
+        $this->serve_markdown_response($post);
     }
 
     /**
