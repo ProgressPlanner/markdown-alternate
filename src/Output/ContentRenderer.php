@@ -43,23 +43,16 @@ class ContentRenderer {
      * @return string The rendered markdown content.
      */
     public function render(WP_Post $post): string {
-        // Generate frontmatter
         $frontmatter = $this->generate_frontmatter($post);
-
-        // Get title for H1 heading
         $title = get_the_title($post);
 
         // Get content and apply WordPress filters (renders shortcodes and blocks)
         $content = $post->post_content;
         $content = apply_filters('the_content', $content);
 
-        // Strip syntax highlighting markup from code blocks
         $content = $this->strip_code_block_markup($content);
-
-        // Convert HTML to markdown
         $body = $this->converter->convert($content);
 
-        // Assemble output
         $output = $frontmatter . "\n\n";
         $output .= '# ' . $this->decode_entities($title) . "\n\n";
         $output .= $body;
@@ -95,28 +88,44 @@ class ContentRenderer {
         }
 
         // Categories (only if present and not WP_Error)
-        $categories = get_the_terms($post->ID, 'category');
-        if ($categories && !is_wp_error($categories)) {
+        $category_lines = $this->format_taxonomy_terms('category', $post->ID);
+        if ($category_lines) {
             $lines[] = 'categories:';
-            foreach ($categories as $category) {
-                $lines[] = '  - name: "' . $this->escape_yaml($category->name) . '"';
-                $lines[] = '    url: "' . $this->get_term_markdown_url($category) . '"';
-            }
+            $lines = array_merge($lines, $category_lines);
         }
 
         // Tags (only if present and not WP_Error)
-        $tags = get_the_terms($post->ID, 'post_tag');
-        if ($tags && !is_wp_error($tags)) {
+        $tag_lines = $this->format_taxonomy_terms('post_tag', $post->ID);
+        if ($tag_lines) {
             $lines[] = 'tags:';
-            foreach ($tags as $tag) {
-                $lines[] = '  - name: "' . $this->escape_yaml($tag->name) . '"';
-                $lines[] = '    url: "' . $this->get_term_markdown_url($tag) . '"';
-            }
+            $lines = array_merge($lines, $tag_lines);
         }
 
         $lines[] = '---';
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * Format taxonomy terms as YAML lines.
+     *
+     * @param string $taxonomy The taxonomy name (e.g., 'category', 'post_tag').
+     * @param int $post_id The post ID.
+     * @return array Array of formatted YAML lines, or empty array if no terms.
+     */
+    private function format_taxonomy_terms(string $taxonomy, int $post_id): array {
+        $terms = get_the_terms($post_id, $taxonomy);
+        if (!$terms || is_wp_error($terms)) {
+            return [];
+        }
+
+        $lines = [];
+        foreach ($terms as $term) {
+            $lines[] = '  - name: "' . $this->escape_yaml($term->name) . '"';
+            $lines[] = '    url: "' . $this->get_term_markdown_url($term) . '"';
+        }
+
+        return $lines;
     }
 
     /**
@@ -142,13 +151,8 @@ class ContentRenderer {
      * @return string The escaped value.
      */
     private function escape_yaml(string $value): string {
-        // Decode HTML entities first (WordPress often returns encoded strings)
-        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-        // Escape backslashes first, then quotes
-        $value = str_replace('\\', '\\\\', $value);
-        $value = str_replace('"', '\\"', $value);
-
+        $value = $this->decode_entities($value);
+        $value = str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
         return $value;
     }
 
@@ -184,11 +188,12 @@ class ContentRenderer {
                 $inner = $matches[2];
 
                 // Check if there's a <code> tag inside and extract language if present
-                $lang = '';
                 if (preg_match('/<code[^>]*class="[^"]*language-(\w+)[^"]*"[^>]*>/i', $inner, $lang_match)) {
                     $lang = $lang_match[1];
                 } elseif (preg_match('/<code[^>]*class="[^"]*hljs[^"]*language-(\w+)[^"]*"[^>]*>/i', $inner, $lang_match)) {
                     $lang = $lang_match[1];
+                } else {
+                    $lang = '';
                 }
 
                 // Strip all HTML tags from inside, keeping only text
