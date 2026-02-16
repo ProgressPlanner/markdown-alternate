@@ -391,15 +391,4 @@ class RewriteHandler {
         return null;
     }
 
-    /**
-     * Register rewrite rules statically.
-     *
-     * Used by activation hook to ensure rules are registered before flush.
-     *
-     * @return void
-     */
-    public static function register_rules(): void {
-        $handler = new self();
-        $handler->add_rewrite_rules();
-    }
 }

@@ -67,7 +67,8 @@ class Plugin {
      * @return void
      */
     public static function activate(): void {
-        RewriteHandler::register_rules();
+        $handler = new RewriteHandler();
+        $handler->add_rewrite_rules();
         flush_rewrite_rules();
     }
 
