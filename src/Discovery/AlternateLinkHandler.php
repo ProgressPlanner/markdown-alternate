@@ -7,6 +7,8 @@
 
 namespace MarkdownAlternate\Discovery;
 
+use MarkdownAlternate\PostTypeSupport;
+
 /**
  * Handles alternate link tag injection in HTML page head.
  *
@@ -22,29 +24,6 @@ class AlternateLinkHandler {
      */
     public function register(): void {
         add_action( 'wp_head', [ $this, 'output_alternate_link' ], 5 );
-    }
-
-    /**
-     * Get supported post types for markdown output.
-     *
-     * Returns an array of post types that can be served as markdown.
-     * Developers can extend this via the 'markdown_alternate_supported_post_types' filter.
-     *
-     * @return array List of supported post type names.
-     */
-    private function get_supported_post_types(): array {
-        $default_types = [ 'post', 'page' ];
-        return apply_filters( 'markdown_alternate_supported_post_types', $default_types );
-    }
-
-    /**
-     * Check if a post type is supported for markdown output.
-     *
-     * @param string $post_type The post type to check.
-     * @return bool True if supported, false otherwise.
-     */
-    private function is_supported_post_type( string $post_type ): bool {
-        return in_array( $post_type, $this->get_supported_post_types(), true );
     }
 
     /**
@@ -67,13 +46,13 @@ class AlternateLinkHandler {
             return;
         }
 
-        // Only for published posts.
+        // Only for published content.
         if ( get_post_status( $post ) !== 'publish' ) {
             return;
         }
 
         // Only for supported post types.
-        if ( ! $this->is_supported_post_type( $post->post_type ) ) {
+        if ( ! PostTypeSupport::is_supported( $post->post_type ) ) {
             return;
         }
 
