@@ -261,7 +261,10 @@ class RewriteHandler {
 
         $request_uri = $_SERVER['REQUEST_URI'] ?? '';
 
-        if (str_ends_with($request_uri, '.MD') || preg_match('/\.[Mm][Dd]$/', $request_uri)) {
+        if (
+            !preg_match('/\.md$/', $request_uri) &&
+            preg_match('/\.md$/i', $request_uri)
+        ) {
             return;
         }
 
