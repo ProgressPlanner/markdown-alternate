@@ -89,10 +89,13 @@ class RewriteHandler {
      * @return void
      */
     public function parse_markdown_url(\WP $wp): void {
-        $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
 
         // Extract path without query string
-        $path = parse_url($request_uri, PHP_URL_PATH);
+        $path = wp_parse_url($request_uri, PHP_URL_PATH);
+        if ($path === false || $path === null) {
+            return;
+        }
 
         // Check if URL ends with .md (case-sensitive, lowercase only)
         if (!preg_match('/^\/(.+)\.md$/', $path, $matches)) {
@@ -266,7 +269,7 @@ class RewriteHandler {
         }
 
         // Get the request URI
-        $request_uri = $_SERVER['REQUEST_URI'] ?? '';
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
 
         // Enforce lowercase .md extension - let WP 404 if wrong case
         if (!preg_match('/\.md$/', $request_uri) && preg_match('/\.md$/i', $request_uri)) {
@@ -275,8 +278,14 @@ class RewriteHandler {
 
         // Handle trailing slash redirect: /post-slug.md/ -> /post-slug.md
         if (preg_match('/\.md\/$/', $request_uri)) {
-            $redirect_url = rtrim($request_uri, '/');
-            wp_redirect($redirect_url, 301);
+            $path = wp_parse_url($request_uri, PHP_URL_PATH);
+            $path = ($path !== false && $path !== null) ? rtrim($path, '/') : '';
+            $query = wp_parse_url($request_uri, PHP_URL_QUERY);
+            $redirect_url = home_url($path);
+            if (!empty($query)) {
+                $redirect_url .= '?' . $query;
+            }
+            wp_safe_redirect(esc_url_raw($redirect_url), 301);
             exit;
         }
 
@@ -361,7 +370,7 @@ class RewriteHandler {
         }
 
         // Check Accept header for text/markdown
-        $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+        $accept = isset($_SERVER['HTTP_ACCEPT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_ACCEPT'])) : '';
         if (strpos($accept, 'text/markdown') === false) {
             return;
         }
@@ -372,13 +381,17 @@ class RewriteHandler {
             return;
         }
 
-        // Build markdown URL
+        // Build markdown URL and redirect safely
         $md_url = UrlConverter::convert_to_markdown_url($canonical);
+        $md_url = esc_url_raw($md_url);
+        if ($md_url === '') {
+            return;
+        }
 
         // 303 See Other redirect with Vary header for caching
         status_header(303);
         header('Vary: Accept');
-        header('Location: ' . $md_url);
+        wp_safe_redirect($md_url, 303);
         exit;
     }
 
