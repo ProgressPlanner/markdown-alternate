@@ -83,20 +83,32 @@ class ContentRenderer {
 
         // Title (always included)
         $title = get_the_title($post);
-        $content_lines['title']['content'] = $this->escape_yaml($title);
+        $content_lines['title'] = array(
+            'type'    => 'string',
+            'content' => $this->escape_yaml($title)
+        );
 
         // Date (always included)
         $date = get_the_date('Y-m-d', $post);
-        $content_lines['date']['content'] = $date;
+        $content_lines['date'] = array(
+            'type'    => 'date',
+            'content' => $date
+        );
 
         // Author (always included)
         $author = get_the_author_meta('display_name', $post->post_author);
-        $content_lines['author']['content'] = $this->escape_yaml($author);
+        $content_lines['author'] = array(
+            'type'    => 'string',
+            'content' => $this->escape_yaml($author)
+        );
 
         // Featured image (only if set)
         $featured_image = get_the_post_thumbnail_url($post->ID, 'full');
         if ($featured_image) {
-            $content_lines['featured_image']['content'] = $this->escape_yaml($featured_image);
+            $content_lines['featured_image'] = array(
+                'type'    => 'url',
+                'content' => $this->escape_yaml($featured_image)
+            );
         }
 
         // Taxonomies (categories and tags by default, but filterable)
@@ -113,8 +125,14 @@ class ContentRenderer {
                 $content_lines[$key]['items'] = array();
                 foreach ($terms as $term) {
                     $content_lines[$key]['items'][] = array(
-                        'name' => $this->escape_yaml($term->name),
-                        'url' => $this->get_term_markdown_url($term),
+                        'name' => array(
+                            'type'    => 'string',
+                            'content' => $this->escape_yaml($term->name)
+                        ),
+                        'url' => array(
+                            'type'    => 'url',
+                            'content' => $this->get_term_markdown_url($term)
+                        ),
                     );
                 }
             }
@@ -127,15 +145,7 @@ class ContentRenderer {
         foreach ($content_lines as $key => $value) {
             // Single content line (like title, date, author, featured_image)
             if (isset($value['content'])) {
-                switch( $key ) {
-                    case 'date':
-                        $lines[] = $key . ': ' . $value['content'];
-                        break;
-                    default:
-                        $lines[] = $key . ': "' . $value['content'] . '"';
-                        break;
-
-                }
+                $lines[] = $key . ': ' . $this->format_yaml_value($value['content'], $value['type']);
             }
             // Multiple items (like categories and tags)
             if (isset($value['items']) && is_array($value['items'])) {
@@ -144,11 +154,12 @@ class ContentRenderer {
                 foreach ($value['items'] as $item) {
                     $i = 0;
                     foreach($item as $item_key => $item_value) {
-                        $item[$item_key] = $this->escape_yaml($item_value);
+                        // We should be also be looking into the item content type to add quotes only when needed, but for now we will just escape all item values and wrap them in quotes to be safe
+                        $item_value = $this->format_yaml_value( $this->escape_yaml($item_value['content']), $item_value['type'] );
                         if ( $i === 0 ) {
-                            $lines[] = '  - ' . $item_key . ': "' . $item[$item_key] . '"';
+                            $lines[] = '  - ' . $item_key . ': ' . $item_value;
                         } else {
-                            $lines[] = '    ' . $item_key . ': "' . $item[$item_key] . '"';
+                            $lines[] = '    ' . $item_key . ': ' . $item_value;
                         }
                         $i++;
                     }
@@ -163,6 +174,16 @@ class ContentRenderer {
         $lines[] = '---';
 
         return implode("\n", $lines);
+    }
+
+    private function format_yaml_value($value, $type) {
+        switch ($type) {
+            case 'date':
+            case 'number':
+                return $value;
+            default:
+                return '"' . $this->escape_yaml($value) . '"';
+        }
     }
 
     /**
