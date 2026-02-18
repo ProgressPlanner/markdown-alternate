@@ -118,6 +118,9 @@ class ContentRenderer {
                 }
             }
         }
+        
+        // Allow 3rd party to modify content lines before they are added to the frontmatter
+        $content_lines = apply_filters('markdown_alternate_frontmatter_content_lines', $content_lines, $post);
 
         // Add content lines to lines
         foreach ($content_lines as $key => $value) {
@@ -149,6 +152,9 @@ class ContentRenderer {
                 }
             }
         }
+
+        // Allow 3rd party to add lines
+        $lines = apply_filters('markdown_alternate_frontmatter_lines', $lines, $post);
         
         // YAML ender
         $lines[] = '---';
