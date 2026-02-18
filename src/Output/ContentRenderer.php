@@ -56,8 +56,19 @@ class ContentRenderer {
         // Strip syntax highlighting markup from code blocks
         $content = $this->strip_code_block_markup($content);
 
-        // Convert HTML to markdown
-        $body = $this->converter->convert($content);
+        // Convert HTML to markdown (filter allows customization of fallback on failure)
+        try {
+            $body = $this->converter->convert($content);
+        } catch (\Throwable $e) {
+            $default_fallback = html_entity_decode(wp_strip_all_tags($content), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $body = apply_filters(
+                'markdown_alternate_conversion_error_fallback',
+                $default_fallback,
+                $content,
+                $post,
+                $e
+            );
+        }
 
         // Assemble output
         $output = $frontmatter . "\n\n";
