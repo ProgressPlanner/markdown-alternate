@@ -74,46 +74,83 @@ class ContentRenderer {
      * @return string The YAML frontmatter block.
      */
     private function generate_frontmatter(WP_Post $post): string {
-        $lines = ['---'];
+
+        $lines = array();
+        $content_lines = array();
+
+        // YAML starter
+        $lines[] = '---';
 
         // Title (always included)
         $title = get_the_title($post);
-        $lines[] = 'title: "' . $this->escape_yaml($title) . '"';
+        $content_lines['title']['content'] = $this->escape_yaml($title);
 
         // Date (always included)
         $date = get_the_date('Y-m-d', $post);
-        $lines[] = 'date: ' . $date;
+        $content_lines['date']['content'] = $date;
 
         // Author (always included)
         $author = get_the_author_meta('display_name', $post->post_author);
-        $lines[] = 'author: "' . $this->escape_yaml($author) . '"';
+        $content_lines['author']['content'] = $this->escape_yaml($author);
 
         // Featured image (only if set)
         $featured_image = get_the_post_thumbnail_url($post->ID, 'full');
         if ($featured_image) {
-            $lines[] = 'featured_image: "' . $this->escape_yaml($featured_image) . '"';
+            $content_lines['featured_image']['content'] = $this->escape_yaml($featured_image);
         }
 
-        // Categories (only if present and not WP_Error)
-        $categories = get_the_terms($post->ID, 'category');
-        if ($categories && !is_wp_error($categories)) {
-            $lines[] = 'categories:';
-            foreach ($categories as $category) {
-                $lines[] = '  - name: "' . $this->escape_yaml($category->name) . '"';
-                $lines[] = '    url: "' . $this->get_term_markdown_url($category) . '"';
+        $taxonommies = array(
+            'category' => 'categories',
+            'post_tag' => 'tags',
+        );
+        $taxonomies = apply_filters('markdown_alternate_frontmatter_taxonomies', $taxonommies, $post);
+
+        // Loop through taxonomies and add to content lines (only if present and not WP_Error)
+        foreach ($taxonomies as $taxonomy => $key) {
+            $terms = get_the_terms($post->ID, $taxonomy);
+            if ($terms && !is_wp_error($terms)) {
+                $content_lines[$key]['items'] = array();
+                foreach ($terms as $term) {
+                    $content_lines[$key]['items'][] = array(
+                        'name' => $this->escape_yaml($term->name),
+                        'url' => $this->get_term_markdown_url($term),
+                    );
+                }
             }
         }
 
-        // Tags (only if present and not WP_Error)
-        $tags = get_the_terms($post->ID, 'post_tag');
-        if ($tags && !is_wp_error($tags)) {
-            $lines[] = 'tags:';
-            foreach ($tags as $tag) {
-                $lines[] = '  - name: "' . $this->escape_yaml($tag->name) . '"';
-                $lines[] = '    url: "' . $this->get_term_markdown_url($tag) . '"';
+        // Add content lines to lines
+        foreach ($content_lines as $key => $value) {
+            if (isset($value['content'])) {
+                switch( $key ) {
+                    case 'date':
+                        $lines[] = $key . ': ' . $value['content'];
+                        break;
+                    default:
+                        $lines[] = $key . ': "' . $value['content'] . '"';
+                        break;
+
+                }
+            }
+            if (isset($value['items']) && is_array($value['items'])) {
+                $lines[] = $key . ':';
+                $i = 0;
+                foreach ($value['items'] as $item) {
+                    $i = 0;
+                    foreach($item as $item_key => $item_value) {
+                        $item[$item_key] = $this->escape_yaml($item_value);
+                        if ( $i === 0 ) {
+                            $lines[] = '  - ' . $item_key . ': "' . $item[$item_key] . '"';
+                        } else {
+                            $lines[] = '    ' . $item_key . ': "' . $item[$item_key] . '"';
+                        }
+                        $i++;
+                    }
+                }
             }
         }
-
+        
+        // YAML ender
         $lines[] = '---';
 
         return implode("\n", $lines);
