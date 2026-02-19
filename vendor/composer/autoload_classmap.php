@@ -39,4 +39,5 @@ return array(
     'MarkdownAlternate\\Output\\ContentRenderer' => $baseDir . '/src/Output/ContentRenderer.php',
     'MarkdownAlternate\\Plugin' => $baseDir . '/src/Plugin.php',
     'MarkdownAlternate\\Router\\RewriteHandler' => $baseDir . '/src/Router/RewriteHandler.php',
+    'MarkdownAlternate\\Router\\UrlConverter' => $baseDir . '/src/Router/UrlConverter.php',
 );
