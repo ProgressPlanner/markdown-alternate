@@ -56,8 +56,13 @@ class ContentRenderer {
         // Strip syntax highlighting markup from code blocks
         $content = $this->strip_code_block_markup($content);
 
-        // Convert HTML to markdown
-        $body = $this->converter->convert($content);
+        // Convert HTML to markdown (fallback to plain text on converter failure)
+        try {
+            $body = $this->converter->convert($content);
+        } catch (\Throwable $e) {
+            $body = wp_strip_all_tags($content);
+            $body = html_entity_decode($body, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        }
 
         // Assemble output
         $output = $frontmatter . "\n\n";
