@@ -43,6 +43,16 @@ class ContentRenderer {
      * @return string The rendered markdown content.
      */
     public function render(WP_Post $post): string {
+        $transient_key = 'md_alt_cache_' . $post->ID;
+        $cached_data   = get_transient( $transient_key );
+
+        // Check if cache exists and post hasn't been modified since.
+        if ( is_array( $cached_data ) && isset( $cached_data['markdown'], $cached_data['modified'] ) ) {
+            if ( $post->post_modified === $cached_data['modified'] ) {
+                return $cached_data['markdown'];
+            }
+        }
+
         $frontmatter = $this->generate_frontmatter($post);
         $title = get_the_title($post);
 
@@ -56,6 +66,21 @@ class ContentRenderer {
         $output = $frontmatter . "\n\n";
         $output .= '# ' . $this->decode_entities($title) . "\n\n";
         $output .= $body;
+
+        // Cache the result (default 24 hours).
+
+        /**
+         * Filters the cache expiration time for rendered markdown output.
+         *
+         * @since 1.1.0
+         *
+         * @param int $expiration Cache expiration time in seconds. Default DAY_IN_SECONDS.
+         */
+        $expiration = apply_filters( 'markdown_alternate_cache_expiration', DAY_IN_SECONDS );
+        set_transient( $transient_key, array(
+            'markdown' => $output,
+            'modified' => $post->post_modified,
+        ), $expiration );
 
         return $output;
     }

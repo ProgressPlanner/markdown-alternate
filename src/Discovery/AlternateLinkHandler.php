@@ -75,6 +75,11 @@ class AlternateLinkHandler {
             return;
         }
 
+        // Hide for password protected posts.
+        if ( post_password_required( $post ) ) {
+            return;
+        }
+
         // Only for supported post types.
         if ( ! $this->is_supported_post_type( $post->post_type ) ) {
             return;
