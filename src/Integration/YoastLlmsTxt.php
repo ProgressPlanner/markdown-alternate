@@ -36,8 +36,8 @@ class YoastLlmsTxt {
         // Wrap each trigger that causes Yoast to (re)generate the llms.txt file.
         // Priority 9 = before Yoast's priority 10, priority 11 = after.
         foreach ( [ 'update_option_wpseo', 'update_option_wpseo_llmstxt', 'wpseo_llms_txt_population' ] as $action ) {
-            add_action( $action, [ $this, 'start' ], 9 );
-            add_action( $action, [ $this, 'stop' ], 11 );
+            add_action( $action, [ $this, 'start' ], 9, 0 );
+            add_action( $action, [ $this, 'stop' ], 11, 0 );
         }
     }
 
