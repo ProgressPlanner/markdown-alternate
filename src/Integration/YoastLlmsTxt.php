@@ -10,6 +10,8 @@
 
 namespace MarkdownAlternate\Integration;
 
+use MarkdownAlternate\PostTypeSupport;
+
 /**
  * Filters post URLs to .md during Yoast SEO's llms.txt generation.
  *
@@ -87,8 +89,8 @@ class YoastLlmsTxt {
     /**
      * Rewrite Yoast canonical URL to .md for supported post types.
      *
-     * @param string $canonical    The canonical URL.
-     * @param object $presentation The Yoast indexable presentation.
+     * @param string                                              $canonical    The canonical URL.
+     * @param \Yoast\WP\SEO\Presentations\Indexable_Presentation $presentation The Yoast indexable presentation.
      * @return string
      */
     public function rewrite_canonical( $canonical, $presentation ) {
@@ -100,7 +102,7 @@ class YoastLlmsTxt {
             return $canonical;
         }
 
-        if ( ! $this->is_supported_post_type( $presentation->model->object_sub_type ) ) {
+        if ( ! PostTypeSupport::is_supported( $presentation->model->object_sub_type ) ) {
             return $canonical;
         }
 
@@ -112,12 +114,13 @@ class YoastLlmsTxt {
      *
      * Works for both post_link and post_type_link filters.
      *
-     * @param string  $url  The permalink.
-     * @param WP_Post $post The post object.
+     * @param string   $url  The permalink.
+     * @param \WP_Post $post The post object.
      * @return string
      */
     public function rewrite_post_link( $url, $post ): string {
-        if ( ! $this->is_supported_post_type( get_post_type( $post ) ) ) {
+        $post_type = get_post_type( $post );
+        if ( ! $post_type || ! PostTypeSupport::is_supported( $post_type ) ) {
             return $url;
         }
 
@@ -132,21 +135,11 @@ class YoastLlmsTxt {
      * @return string
      */
     public function rewrite_page_link( $url, $post_id ): string {
-        if ( ! $this->is_supported_post_type( get_post_type( $post_id ) ) ) {
+        $post_type = get_post_type( $post_id );
+        if ( ! $post_type || ! PostTypeSupport::is_supported( $post_type ) ) {
             return $url;
         }
 
         return rtrim( $url, '/' ) . '.md';
-    }
-
-    /**
-     * Check if a post type is supported for markdown output.
-     *
-     * @param string $post_type The post type to check.
-     * @return bool
-     */
-    private function is_supported_post_type( string $post_type ): bool {
-        $supported = apply_filters( 'markdown_alternate_supported_post_types', [ 'post', 'page' ] );
-        return in_array( $post_type, $supported, true );
     }
 }
