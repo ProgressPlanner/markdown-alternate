@@ -372,6 +372,22 @@ class RewriteHandler {
             return;
         }
 
+        // Prevent shared caches (CDNs, reverse proxies) that don't honour
+        // Vary from storing this content-negotiation redirect and serving
+        // the 303 to every visitor regardless of their Accept header.
+        header('Cache-Control: private');
+
+        // Many WordPress page-cache plugins cache at the PHP level and may
+        // not vary by the Accept request header. Tell them explicitly not to
+        // cache this response. Sites with Vary-aware caching can disable this:
+        //   add_filter( 'markdown_alternate_disable_page_cache_on_redirect', '__return_false' );
+        if ( apply_filters( 'markdown_alternate_disable_page_cache_on_redirect', true ) ) {
+            if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+                define( 'DONOTCACHEPAGE', true );
+            }
+            do_action( 'litespeed_control_set_nocache', 'Content negotiation redirect' );
+        }
+
         // 303 See Other: redirect to markdown URL with Vary for cache correctness.
         header('Vary: Accept');
         wp_safe_redirect($md_url, 303);
