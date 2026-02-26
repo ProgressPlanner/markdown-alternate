@@ -8,6 +8,7 @@
 namespace MarkdownAlternate;
 
 use MarkdownAlternate\Discovery\AlternateLinkHandler;
+use MarkdownAlternate\Integration\YoastLlmsTxt;
 use MarkdownAlternate\Router\RewriteHandler;
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
@@ -64,6 +65,19 @@ class Plugin {
             MARKDOWN_ALTERNATE_FILE,
             'markdown-alternate'
         );
+
+        add_action( 'plugins_loaded', [ $this, 'register_integrations' ] );
+    }
+
+    /**
+     * Register integrations with third-party plugins.
+     *
+     * @return void
+     */
+    public function register_integrations(): void {
+        if ( defined( 'WPSEO_VERSION' ) ) {
+            ( new YoastLlmsTxt() )->register();
+        }
     }
 
     /**
