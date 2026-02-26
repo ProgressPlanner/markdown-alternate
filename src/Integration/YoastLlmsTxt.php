@@ -65,7 +65,7 @@ class YoastLlmsTxt {
 
         // from_post() fallback path: uses get_permalink() directly.
         add_filter( 'post_link', [ $this, 'rewrite_post_link' ], 10, 2 );
-        add_filter( 'page_link', [ $this, 'rewrite_page_link' ], 10, 2 );
+        add_filter( 'page_link', [ $this, 'rewrite_post_link' ], 10, 2 );
         add_filter( 'post_type_link', [ $this, 'rewrite_post_link' ], 10, 2 );
     }
 
@@ -82,7 +82,7 @@ class YoastLlmsTxt {
 
         remove_filter( 'wpseo_canonical', [ $this, 'rewrite_canonical' ], 10 );
         remove_filter( 'post_link', [ $this, 'rewrite_post_link' ], 10 );
-        remove_filter( 'page_link', [ $this, 'rewrite_page_link' ], 10 );
+        remove_filter( 'page_link', [ $this, 'rewrite_post_link' ], 10 );
         remove_filter( 'post_type_link', [ $this, 'rewrite_post_link' ], 10 );
     }
 
@@ -110,32 +110,17 @@ class YoastLlmsTxt {
     }
 
     /**
-     * Rewrite post/CPT permalink to .md.
+     * Rewrite post/page/CPT permalink to .md.
      *
-     * Works for both post_link and post_type_link filters.
+     * Handles post_link, page_link, and post_type_link filters.
+     * get_post_type() accepts both a WP_Post object and an integer post ID.
      *
-     * @param string   $url  The permalink.
-     * @param \WP_Post $post The post object.
+     * @param string          $url       The permalink.
+     * @param \WP_Post|int    $post      The post object or post ID.
      * @return string
      */
     public function rewrite_post_link( $url, $post ): string {
         $post_type = get_post_type( $post );
-        if ( ! $post_type || ! PostTypeSupport::is_supported( $post_type ) ) {
-            return $url;
-        }
-
-        return rtrim( $url, '/' ) . '.md';
-    }
-
-    /**
-     * Rewrite page permalink to .md.
-     *
-     * @param string $url     The page URL.
-     * @param int    $post_id The page ID.
-     * @return string
-     */
-    public function rewrite_page_link( $url, $post_id ): string {
-        $post_type = get_post_type( $post_id );
         if ( ! $post_type || ! PostTypeSupport::is_supported( $post_type ) ) {
             return $url;
         }
