@@ -372,6 +372,16 @@ class RewriteHandler {
             return;
         }
 
+        // Prevent page caches from storing this content-negotiation redirect.
+        // LiteSpeed Cache (and similar full-page caches) ignore the standard
+        // HTTP Vary header and would serve this 303 to every visitor regardless
+        // of their Accept header value.
+        if (!defined('DONOTCACHEPAGE')) {
+            define('DONOTCACHEPAGE', true);
+        }
+        header('Cache-Control: private, no-store');
+        do_action('litespeed_control_set_nocache', 'Content negotiation redirect');
+
         // 303 See Other: redirect to markdown URL with Vary for cache correctness.
         header('Vary: Accept');
         wp_safe_redirect($md_url, 303);
