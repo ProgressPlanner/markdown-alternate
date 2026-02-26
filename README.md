@@ -140,6 +140,16 @@ Once added, the custom post type will:
 - Respond to `?format=markdown` query parameter
 - Include `<link rel="alternate">` tag in HTML head
 
+### Caching
+
+Markdown output is cached using WordPress transients for 24 hours by default. The cache is automatically bypassed if the post is modified. You can adjust the cache expiration time (in seconds) using the `markdown_alternate_cache_expiration` filter:
+
+```php
+add_filter( 'markdown_alternate_cache_expiration', function( $seconds ) {
+    return HOUR_IN_SECONDS; // Cache for 1 hour instead of 24
+} );
+```
+
 ## License
 
 GPL-2.0-or-later

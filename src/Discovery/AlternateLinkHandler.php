@@ -7,6 +7,7 @@
 
 namespace MarkdownAlternate\Discovery;
 
+use MarkdownAlternate\PostTypeSupport;
 use MarkdownAlternate\Router\UrlConverter;
 
 /**
@@ -27,30 +28,6 @@ class AlternateLinkHandler {
     }
 
     /**
-     * Get supported post types for markdown output.
-     *
-     * Returns an array of post types that can be served as markdown.
-     * Developers can extend this via the 'markdown_alternate_supported_post_types' filter.
-     *
-     * @return array List of supported post type names.
-     */
-    private function get_supported_post_types(): array {
-        $default_types = [ 'post', 'page' ];
-        return apply_filters( 'markdown_alternate_supported_post_types', $default_types );
-    }
-
-    /**
-     * Check if a post type is supported for markdown output.
-     *
-     * @param string $post_type The post type to check.
-     * @return bool True if supported, false otherwise.
-     */
-    private function is_supported_post_type( string $post_type ): bool {
-        return in_array( $post_type, $this->get_supported_post_types(), true );
-    }
-
-
-    /**
      * Output alternate link tag for markdown version.
      *
      * Only outputs for published posts and pages (supported post types).
@@ -59,31 +36,29 @@ class AlternateLinkHandler {
      * @return void
      */
     public function output_alternate_link(): void {
-        // Only for singular content (posts and pages).
         if ( ! is_singular() ) {
             return;
         }
 
-        // Get the current post.
         $post = get_queried_object();
         if ( ! $post instanceof \WP_Post ) {
             return;
         }
 
-        // Only for published posts.
         if ( get_post_status( $post ) !== 'publish' ) {
             return;
         }
 
-        // Only for supported post types.
-        if ( ! $this->is_supported_post_type( $post->post_type ) ) {
+        if ( post_password_required( $post ) ) {
             return;
         }
 
-        // Build the .md URL.
+        if ( ! PostTypeSupport::is_supported( $post->post_type ) ) {
+            return;
+        }
+
         $md_url = UrlConverter::convert_to_markdown_url( get_permalink( $post ) );
 
-        // Output the alternate link tag.
         printf(
             '<link rel="alternate" type="text/markdown" href="%s" />' . "\n",
             esc_url( $md_url )

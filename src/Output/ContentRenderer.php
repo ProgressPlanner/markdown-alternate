@@ -43,26 +43,55 @@ class ContentRenderer {
      * @return string The rendered markdown content.
      */
     public function render(WP_Post $post): string {
-        // Generate frontmatter
-        $frontmatter = $this->generate_frontmatter($post);
+        $transient_key = 'md_alt_cache_' . $post->ID;
+        $cached_data   = get_transient( $transient_key );
 
-        // Get title for H1 heading
+        // Check if cache exists and post hasn't been modified since.
+        if ( is_array( $cached_data ) && isset( $cached_data['markdown'], $cached_data['modified'] ) ) {
+            if ( $post->post_modified === $cached_data['modified'] ) {
+                return $cached_data['markdown'];
+            }
+        }
+
+        $frontmatter = $this->generate_frontmatter($post);
         $title = get_the_title($post);
 
         // Get content and apply WordPress filters (renders shortcodes and blocks)
         $content = $post->post_content;
         $content = apply_filters('the_content', $content);
 
-        // Strip syntax highlighting markup from code blocks
         $content = $this->strip_code_block_markup($content);
+        try {
+            $body = $this->converter->convert($content);
+        } catch (\Throwable $e) {
+            $default_fallback = html_entity_decode(wp_strip_all_tags($content), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $body = apply_filters(
+                'markdown_alternate_conversion_error_fallback',
+                $default_fallback,
+                $content,
+                $post,
+                $e
+            );
+        }
 
-        // Convert HTML to markdown
-        $body = $this->converter->convert($content);
-
-        // Assemble output
         $output = $frontmatter . "\n\n";
         $output .= '# ' . $this->decode_entities($title) . "\n\n";
         $output .= $body;
+
+        // Cache the result (default 24 hours).
+
+        /**
+         * Filters the cache expiration time for rendered markdown output.
+         *
+         * @since 1.1.0
+         *
+         * @param int $expiration Cache expiration time in seconds. Default DAY_IN_SECONDS.
+         */
+        $expiration = apply_filters( 'markdown_alternate_cache_expiration', DAY_IN_SECONDS );
+        set_transient( $transient_key, array(
+            'markdown' => $output,
+            'modified' => $post->post_modified,
+        ), $expiration );
 
         return $output;
     }
@@ -223,13 +252,8 @@ class ContentRenderer {
      * @return string The escaped value.
      */
     private function escape_yaml(string $value): string {
-        // Decode HTML entities first (WordPress often returns encoded strings)
-        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-        // Escape backslashes first, then quotes
-        $value = str_replace('\\', '\\\\', $value);
-        $value = str_replace('"', '\\"', $value);
-
+        $value = $this->decode_entities($value);
+        $value = str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
         return $value;
     }
 
@@ -265,11 +289,12 @@ class ContentRenderer {
                 $inner = $matches[2];
 
                 // Check if there's a <code> tag inside and extract language if present
-                $lang = '';
                 if (preg_match('/<code[^>]*class="[^"]*language-(\w+)[^"]*"[^>]*>/i', $inner, $lang_match)) {
                     $lang = $lang_match[1];
                 } elseif (preg_match('/<code[^>]*class="[^"]*hljs[^"]*language-(\w+)[^"]*"[^>]*>/i', $inner, $lang_match)) {
                     $lang = $lang_match[1];
+                } else {
+                    $lang = '';
                 }
 
                 // Strip all HTML tags from inside, keeping only text
