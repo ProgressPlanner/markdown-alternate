@@ -4,7 +4,7 @@ Tags: markdown, content, api, llm
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -26,6 +26,7 @@ This plugin is designed for:
 * Access any page at `/page-slug.md`
 * Nested pages work: `/parent/child.md`
 * Date-based permalinks supported: `/2024/01/my-post.md`
+* Performance: Markdown output is cached for 24 hours
 * Zero configuration required
 
 **Requirements:**
@@ -52,6 +53,10 @@ Ensure pretty permalinks are enabled. Go to Settings > Permalinks and select any
 
 No. The plugin works immediately after activation with zero configuration.
 
+= Is the output cached? =
+
+Yes. Markdown output is cached using WordPress transients for 24 hours. The cache is automatically cleared if the post is modified. Developers can adjust the cache duration using the `markdown_alternate_cache_expiration` filter.
+
 = What content is included in the markdown output? =
 
 The markdown output includes the post title, publication date, author, featured image URL (if set), the post content converted to markdown, and categories/tags.
@@ -72,6 +77,11 @@ Use the `format` query parameter: `https://example.com/hello-world/?format=markd
 This works on any supported post URL. The value must be exactly `markdown` (lowercase).
 
 == Changelog ==
+
+= 1.1.0 =
+* Performance: Implemented transient caching (24h default) with post-modified validation
+* Privacy: Hide alternate link tags in HTML head for password-protected posts
+* Extensibility: Added `markdown_alternate_cache_expiration` filter
 
 = 1.0.0 =
 * Initial release

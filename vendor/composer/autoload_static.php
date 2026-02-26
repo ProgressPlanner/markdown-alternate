@@ -6,23 +6,27 @@ namespace Composer\Autoload;
 
 class ComposerStaticInit30105965ef2b463e5c24db4489fbe8a0
 {
+    public static $files = array (
+        'f6d4f6bcee7247df6b777884c3e22f98' => __DIR__ . '/..' . '/yahnis-elsts/plugin-update-checker/load-v5p6.php',
+    );
+
     public static $prefixLengthsPsr4 = array (
-        'M' => 
+        'M' =>
         array (
             'MarkdownAlternate\\' => 18,
         ),
-        'L' => 
+        'L' =>
         array (
             'League\\HTMLToMarkdown\\' => 22,
         ),
     );
 
     public static $prefixDirsPsr4 = array (
-        'MarkdownAlternate\\' => 
+        'MarkdownAlternate\\' =>
         array (
             0 => __DIR__ . '/../..' . '/src',
         ),
-        'League\\HTMLToMarkdown\\' => 
+        'League\\HTMLToMarkdown\\' =>
         array (
             0 => __DIR__ . '/..' . '/league/html-to-markdown/src',
         ),
@@ -62,6 +66,7 @@ class ComposerStaticInit30105965ef2b463e5c24db4489fbe8a0
         'MarkdownAlternate\\Output\\ContentRenderer' => __DIR__ . '/../..' . '/src/Output/ContentRenderer.php',
         'MarkdownAlternate\\Plugin' => __DIR__ . '/../..' . '/src/Plugin.php',
         'MarkdownAlternate\\Router\\RewriteHandler' => __DIR__ . '/../..' . '/src/Router/RewriteHandler.php',
+        'MarkdownAlternate\\Router\\UrlConverter' => __DIR__ . '/../..' . '/src/Router/UrlConverter.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

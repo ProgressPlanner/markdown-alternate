@@ -9,6 +9,7 @@ namespace MarkdownAlternate;
 
 use MarkdownAlternate\Discovery\AlternateLinkHandler;
 use MarkdownAlternate\Router\RewriteHandler;
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
 /**
  * Main plugin class implementing singleton pattern.
@@ -57,6 +58,12 @@ class Plugin {
 
         $this->discovery = new AlternateLinkHandler();
         $this->discovery->register();
+
+        PucFactory::buildUpdateChecker(
+            'https://github.com/ProgressPlanner/markdown-alternate/',
+            MARKDOWN_ALTERNATE_FILE,
+            'markdown-alternate'
+        );
     }
 
     /**

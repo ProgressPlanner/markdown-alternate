@@ -49,6 +49,10 @@ class AlternateLinkHandler {
             return;
         }
 
+        if ( post_password_required( $post ) ) {
+            return;
+        }
+
         if ( ! PostTypeSupport::is_supported( $post->post_type ) ) {
             return;
         }
