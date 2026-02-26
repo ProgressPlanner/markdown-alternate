@@ -103,65 +103,130 @@ class ContentRenderer {
      * @return string The YAML frontmatter block.
      */
     private function generate_frontmatter(WP_Post $post): string {
-        $lines = ['---'];
+
+        $lines = array();
+        $content_lines = array();
+
+        // YAML starter
+        $lines[] = '---';
 
         // Title (always included)
         $title = get_the_title($post);
-        $lines[] = 'title: "' . $this->escape_yaml($title) . '"';
+        $content_lines['title'] = array(
+            'type'    => 'string',
+            'content' => $this->escape_yaml($title)
+        );
 
         // Date (always included)
         $date = get_the_date('Y-m-d', $post);
-        $lines[] = 'date: ' . $date;
+        $content_lines['date'] = array(
+            'type'    => 'date',
+            'content' => $date
+        );
 
         // Author (always included)
         $author = get_the_author_meta('display_name', $post->post_author);
-        $lines[] = 'author: "' . $this->escape_yaml($author) . '"';
+        $content_lines['author'] = array(
+            'type'    => 'string',
+            'content' => $this->escape_yaml($author)
+        );
 
         // Featured image (only if set)
         $featured_image = get_the_post_thumbnail_url($post->ID, 'full');
         if ($featured_image) {
-            $lines[] = 'featured_image: "' . $this->escape_yaml($featured_image) . '"';
+            $content_lines['featured_image'] = array(
+                'type'    => 'url',
+                'content' => $this->escape_yaml($featured_image)
+            );
         }
 
-        // Categories (only if present and not WP_Error)
-        $category_lines = $this->format_taxonomy_terms('category', $post->ID);
-        if ($category_lines) {
-            $lines[] = 'categories:';
-            $lines = array_merge($lines, $category_lines);
+        // Taxonomies (categories and tags by default, but filterable)
+        $taxonommies = array(
+            'category' => 'categories',
+            'post_tag' => 'tags',
+        );
+        $taxonomies = apply_filters('markdown_alternate_frontmatter_taxonomies', $taxonommies, $post);
+
+        // Loop through taxonomies and add to content lines (only if present and not WP_Error)
+        foreach ($taxonomies as $taxonomy => $key) {
+            $terms = get_the_terms($post->ID, $taxonomy);
+            if ($terms && !is_wp_error($terms)) {
+                $content_lines[$key]['type'] = 'array';
+                $content_lines[$key]['items'] = array();
+                foreach ($terms as $term) {
+                    $content_lines[$key]['items'][] = array(
+                        'name' => array(
+                            'type'    => 'string',
+                            'content' => $this->escape_yaml($term->name)
+                        ),
+                        'url' => array(
+                            'type'    => 'url',
+                            'content' => $this->get_term_markdown_url($term)
+                        ),
+                    );
+                }
+            }
+        }
+        
+        // Allow 3rd party to modify content lines before they are added to the raw lines
+        $content_lines = apply_filters('markdown_alternate_frontmatter_content_lines', $content_lines, $post);
+
+        // Add content lines to lines
+        foreach ($content_lines as $key => $value) {
+            if (!isset( $value['type']) || (empty($value['type']))) {
+                // Skip empty type values
+                continue;
+            }
+            if ($value['type'] === 'array' && isset($value['items']) && is_array($value['items'])) {
+                // Multiple items (like categories and tags)
+                $lines[] = $key . ':';
+                foreach ($value['items'] as $item) {
+                    //$item_lines = array();
+                    $i = 0;
+                    foreach ($item as $item_key => $item_value) {
+                        if (!isset( $item_value['type']) || (empty($item_value['type'])) || (!isset( $item_value['content']))) {
+                            // Skip empty type values or if content is not set
+                            continue;
+                        }
+                        $item_value = $this->format_yaml_value($this->escape_yaml($item_value['content']), $item_value['type']);
+                        if ( $i === 0 ) {
+                            $lines[] = '  - ' . $item_key . ': ' . $item_value;
+                        } else {
+                            $lines[] = '    ' . $item_key . ': ' . $item_value;
+                        }
+                        $i++;
+                    }
+                }
+            } elseif (isset($value['content'])) {
+                // Single content line (like title, date, author, featured_image)
+                $lines[] = $key . ': ' . $this->format_yaml_value($value['content'], $value['type']);
+            }
         }
 
-        // Tags (only if present and not WP_Error)
-        $tag_lines = $this->format_taxonomy_terms('post_tag', $post->ID);
-        if ($tag_lines) {
-            $lines[] = 'tags:';
-            $lines = array_merge($lines, $tag_lines);
-        }
-
+        // Allow 3rd party to add lines before they're added to the frontmatter block (e.g. for custom fields or taxonomies that require a different structure)
+        $lines = apply_filters('markdown_alternate_frontmatter_lines', $lines, $post);
+        
+        // YAML ender
         $lines[] = '---';
 
         return implode("\n", $lines);
     }
 
     /**
-     * Format taxonomy terms as YAML lines.
+     * Format a value for YAML output based on its type.
      *
-     * @param string $taxonomy The taxonomy name (e.g., 'category', 'post_tag').
-     * @param int $post_id The post ID.
-     * @return array Array of formatted YAML lines, or empty array if no terms.
+     * @param string $value The value to format.
+     * @param string $type The type of the value (e.g. 'string', 'date', 'url', 'number').
+     * @return string The formatted value for YAML.
      */
-    private function format_taxonomy_terms(string $taxonomy, int $post_id): array {
-        $terms = get_the_terms($post_id, $taxonomy);
-        if (!$terms || is_wp_error($terms)) {
-            return [];
+    private function format_yaml_value($value, $type) {
+        switch ($type) {
+            case 'date':
+            case 'number':
+                return $value;
+            default:
+                return '"' . $this->escape_yaml($value) . '"';
         }
-
-        $lines = [];
-        foreach ($terms as $term) {
-            $lines[] = '  - name: "' . $this->escape_yaml($term->name) . '"';
-            $lines[] = '    url: "' . $this->get_term_markdown_url($term) . '"';
-        }
-
-        return $lines;
     }
 
     /**
