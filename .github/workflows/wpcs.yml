@@ -1,0 +1,29 @@
+name: WordPress Coding Standards
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phpcs:
+    name: WPCS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: WPCS check
+        uses: 10up/wpcs-action@stable
+        with:
+          enable_warnings: true
+          standard: WordPress
+          only_changed_lines: true

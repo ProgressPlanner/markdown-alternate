@@ -1,0 +1,21 @@
+name: Playground Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  preview:
+    name: Playground Preview
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add Playground preview
+        uses: WordPress/action-wp-playground-pr-preview@v2
+        with:
+          plugin-path: .
+          mode: append-to-description
+          github-token: ${{ secrets.GITHUB_TOKEN }}
