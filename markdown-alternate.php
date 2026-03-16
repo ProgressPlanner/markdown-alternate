@@ -3,7 +3,7 @@
  * Plugin Name: Markdown Alternate
  * Plugin URI: https://github.com/ProgressPlanner/markdown-alternate
  * Description: Provides markdown versions of posts and pages via .md URLs
- * Version: 1.0.0
+ * Version: 1.1.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
  * Author: Joost de Valk
@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 }
 
 define('MARKDOWN_ALTERNATE_FILE', __FILE__);
-define('MARKDOWN_ALTERNATE_VERSION', '1.0.0');
+define('MARKDOWN_ALTERNATE_VERSION', '1.1.0');
 
 require_once __DIR__ . '/vendor/autoload.php';
 

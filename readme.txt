@@ -1,6 +1,6 @@
 === Markdown Alternate ===
 Contributors: joostdevalk
-Tags: markdown, content, api, llm
+Tags: markdown, llm, ai, content, api
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
@@ -8,85 +8,109 @@ Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Provides markdown versions of posts and pages via .md URLs.
+Expose WordPress posts and pages as clean Markdown via .md URLs, content negotiation, and a query parameter fallback.
 
 == Description ==
 
-Markdown Alternate exposes your WordPress content as clean markdown through predictable URLs. Simply append `.md` to any post or page URL to get the markdown version.
+Markdown Alternate gives your existing WordPress content a clean Markdown version without requiring editors to maintain a second format.
 
-This plugin is designed for:
+It is useful for:
 
-* LLMs consuming web content
-* Developers building tools that parse content
-* Users who prefer markdown over HTML
+* AI and LLM retrieval workflows
+* Developer tools and content pipelines
+* Headless or hybrid publishing setups
+* Readers and systems that prefer clean text over full HTML
 
-**Features:**
+After activation, supported content can be requested in multiple ways:
 
-* Access any post at `/post-slug.md`
-* Access any page at `/page-slug.md`
-* Nested pages work: `/parent/child.md`
-* Date-based permalinks supported: `/2024/01/my-post.md`
-* Performance: Markdown output is cached for 24 hours
-* Zero configuration required
+* Append `.md` to a post or page URL
+* Send an `Accept: text/markdown` header to the normal permalink
+* Use `?format=markdown` when custom headers are not practical
 
-**Requirements:**
+**Key benefits:**
 
-* Pretty permalinks must be enabled (not "Plain" structure)
-* PHP 7.4 or higher
-* WordPress 6.0 or higher
+* Zero configuration after activation
+* Works with posts and pages out of the box
+* Supports nested pages and date-based permalinks
+* Caches generated Markdown for better performance
+* Lets developers enable custom post types
+* Integrates with Yoast SEO `llms.txt` generation when Yoast SEO is active
+
+**Good to know:**
+
+* Pretty permalinks must be enabled
+* The plugin uses your published WordPress content as the source of truth
+* Markdown output includes useful front matter such as title, date, author, featured image, categories, and tags when available
 
 == Installation ==
 
-1. Upload the plugin files to `/wp-content/plugins/markdown-alternate/`
-2. Activate the plugin through the 'Plugins' screen in WordPress
-3. Visit any post or page URL with `.md` extension
+1. Upload the plugin files to `/wp-content/plugins/markdown-alternate/` or install it through WordPress.
+2. Activate the plugin through the 'Plugins' screen in WordPress.
+3. Go to 'Settings > Permalinks' and make sure your permalink structure is not set to 'Plain'.
+4. Open any published post or page URL with `.md` appended.
 
-That's it! No configuration needed.
+Example:
+
+`https://example.com/hello-world.md`
 
 == Frequently Asked Questions ==
 
-= Why do I get 404 errors on .md URLs? =
+= What problem does this solve? =
 
-Ensure pretty permalinks are enabled. Go to Settings > Permalinks and select any structure other than "Plain".
+It gives your WordPress content a Markdown representation that is easier to consume in AI pipelines, developer tooling, documentation workflows, and other text-first use cases.
+
+= How do I access the Markdown version of a post? =
+
+Use any of these methods:
+
+* Append `.md` to the URL, for example `https://example.com/hello-world.md`
+* Request the normal URL with `Accept: text/markdown`
+* Use `?format=markdown`, for example `https://example.com/hello-world/?format=markdown`
+
+= Why do I get 404 errors on `.md` URLs? =
+
+Pretty permalinks must be enabled. Go to 'Settings > Permalinks' and select any structure other than 'Plain'. If you just activated the plugin, saving permalinks once can also help refresh rewrite rules.
 
 = Do I need to configure anything? =
 
-No. The plugin works immediately after activation with zero configuration.
-
-= Is the output cached? =
-
-Yes. Markdown output is cached using WordPress transients for 24 hours. The cache is automatically cleared if the post is modified. Developers can adjust the cache duration using the `markdown_alternate_cache_expiration` filter.
-
-= What content is included in the markdown output? =
-
-The markdown output includes the post title, publication date, author, featured image URL (if set), the post content converted to markdown, and categories/tags.
+No. The plugin works immediately after activation for posts and pages.
 
 = Does it work with custom post types? =
 
-Yes! By default, only posts and pages are supported. Developers can enable custom post types using a filter hook:
+Yes. Developers can enable custom post types with the `markdown_alternate_supported_post_types` filter.
+
+Example:
 
 `add_filter( 'markdown_alternate_supported_post_types', function( $types ) {
     $types[] = 'your_custom_type';
     return $types;
 } );`
 
-= What if my client cannot send Accept headers? =
+= Is the output cached? =
 
-Use the `format` query parameter: `https://example.com/hello-world/?format=markdown`
+Yes. Markdown output is cached using WordPress transients for 24 hours by default. The cache is automatically bypassed if the post has changed. Developers can adjust the cache duration with the `markdown_alternate_cache_expiration` filter.
 
-This works on any supported post URL. The value must be exactly `markdown` (lowercase).
+= What does the Markdown output include? =
+
+The output includes converted post content plus front matter such as the title, publication date, author, featured image URL, categories, and tags when available.
+
+= Does it work with Yoast SEO llms.txt? =
+
+Yes. When Yoast SEO is active and generating `llms.txt`, Markdown Alternate can rewrite supported post URLs to their `.md` versions.
 
 == Changelog ==
 
 = 1.1.0 =
-* Performance: Implemented transient caching (24h default) with post-modified validation
-* Privacy: Hide alternate link tags in HTML head for password-protected posts
-* Extensibility: Added `markdown_alternate_cache_expiration` filter
+* Added transient caching with a 24 hour default and post-modified validation
+* Added the `markdown_alternate_cache_expiration` filter for cache control
+* Improved privacy by hiding alternate link tags for password-protected posts
+* Added Yoast SEO `llms.txt` integration for supported content types
+* Improved plugin messaging and documentation
 
 = 1.0.0 =
 * Initial release
 * Support for posts and pages
-* Clean .md URL endpoints
-* Content negotiation via Accept header
-* Query parameter fallback via ?format=markdown
+* Clean `.md` URL endpoints
+* Content negotiation via the `Accept` header
+* Query parameter fallback via `?format=markdown`
 * Custom post type support via filter hook
