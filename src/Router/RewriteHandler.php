@@ -251,15 +251,13 @@ class RewriteHandler {
 
         if (is_singular()) {
             $post = get_queried_object();
-        } elseif ('page' === get_option('show_on_front')) {
+        } elseif ('page' === get_option('show_on_front') && (is_front_page() || is_home())) {
             // Static front page: the extra ?format= query var can prevent
             // WordPress from recognising the request as singular, so it falls
             // back to the blog-post index.
-            if (is_front_page() || is_home()) {
-                $page_on_front = (int) get_option('page_on_front');
-                if ($page_on_front) {
-                    $post = get_post($page_on_front);
-                }
+            $page_on_front = (int) get_option('page_on_front');
+            if ($page_on_front) {
+                $post = get_post($page_on_front);
             }
         }
 
