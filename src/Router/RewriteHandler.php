@@ -247,11 +247,21 @@ class RewriteHandler {
             return;
         }
 
-        if (!is_singular()) {
-            return;
-        }
+        $post = null;
 
-        $post = get_queried_object();
+        if (is_singular()) {
+            $post = get_queried_object();
+        } elseif ('page' === get_option('show_on_front')) {
+            // Static front page: the extra ?format= query var can prevent
+            // WordPress from recognising the request as singular, so it falls
+            // back to the blog-post index.
+            if (is_front_page() || is_home()) {
+                $page_on_front = (int) get_option('page_on_front');
+                if ($page_on_front) {
+                    $post = get_post($page_on_front);
+                }
+            }
+        }
 
         if (!$post instanceof WP_Post) {
             return;
