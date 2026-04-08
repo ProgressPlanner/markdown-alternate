@@ -167,9 +167,9 @@ class WooCommerce {
     private function build_summary_section( $product ): string {
         $rows = [];
 
-        $price_html = $product->get_price_html();
-        if ( $price_html !== '' ) {
-            $rows[] = '**Price:** ' . trim( wp_strip_all_tags( $price_html ) );
+        $price_line = $this->format_price( $product );
+        if ( $price_line !== '' ) {
+            $rows[] = '**Price:** ' . $price_line;
         }
 
         $sku = $product->get_sku();
@@ -190,6 +190,44 @@ class WooCommerce {
         }
 
         return implode( "\n", $rows );
+    }
+
+    /**
+     * Format a product price as clean plain text.
+     *
+     * Avoids `get_price_html()` because it injects screen-reader spans
+     * ("Original price was:", "Current price is:") and NBSP entities that
+     * don't belong in markdown output.
+     *
+     * @param \WC_Product $product The product.
+     * @return string
+     */
+    private function format_price( $product ): string {
+        if ( ! function_exists( 'wc_price' ) ) {
+            return '';
+        }
+
+        $regular = $product->get_regular_price();
+        $sale    = $product->get_sale_price();
+        $price   = $product->get_price();
+
+        $clean = function ( $html ) {
+            $text = wp_strip_all_tags( (string) $html );
+            $text = html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+            // Normalize NBSP to a regular space.
+            $text = str_replace( "\xc2\xa0", ' ', $text );
+            return trim( $text );
+        };
+
+        if ( $sale !== '' && $sale !== null && $regular !== '' && $regular !== null && (float) $sale < (float) $regular ) {
+            return $clean( wc_price( $sale ) ) . ' (was ' . $clean( wc_price( $regular ) ) . ')';
+        }
+
+        if ( $price !== '' && $price !== null ) {
+            return $clean( wc_price( $price ) );
+        }
+
+        return '';
     }
 
     /**
