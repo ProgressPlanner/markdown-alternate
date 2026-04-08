@@ -35,6 +35,7 @@ After activation, supported content can be requested in multiple ways:
 * Caches generated Markdown for better performance
 * Lets developers enable custom post types
 * Integrates with Yoast SEO `llms.txt` generation when Yoast SEO is active
+* Integrates with WooCommerce — exposes products at `.md` URLs with price, SKU, stock, attributes, and variations
 
 **Good to know:**
 
@@ -98,7 +99,41 @@ The output includes converted post content plus front matter such as the title, 
 
 Yes. When Yoast SEO is active and generating `llms.txt`, Markdown Alternate can rewrite supported post URLs to their `.md` versions.
 
+= Does it work with WooCommerce? =
+
+Yes. When WooCommerce is active, products are automatically served at `.md` URLs. The output includes price, sale price, SKU, stock status, product categories and tags in the frontmatter, plus a summary block, attributes, and variations (for variable products) in the body.
+
+= How can my plugin add custom fields or sections to the markdown output? =
+
+Two filters let you extend any post's markdown output:
+
+* `markdown_alternate_frontmatter` — add YAML keys.
+* `markdown_alternate_content_sections` — add ordered body sections (lower `priority` runs first; the title is `0`, the post content is `100`).
+
+Example:
+
+`add_filter( 'markdown_alternate_frontmatter', function( $data, $post ) {
+    $data['cook_time'] = get_post_meta( $post->ID, '_cook_time', true );
+    return $data;
+}, 10, 2 );
+
+add_filter( 'markdown_alternate_content_sections', function( $sections, $post ) {
+    $sections['my_ingredients'] = [
+        'priority' => 120,
+        'markdown' => "## Ingredients\n\n- Flour\n- Sugar",
+    ];
+    return $sections;
+}, 10, 2 );`
+
+If your data lives outside `post_content` (e.g. postmeta), call `delete_transient( 'md_alt_cache_' . $post_id )` from your own update hooks so cached output stays fresh.
+
 == Changelog ==
+
+= 1.2.0 =
+* Added WooCommerce integration: products are exposed at `.md` URLs with price, SKU, stock, attributes, and variations
+* Added the `markdown_alternate_frontmatter` filter so integrations can add YAML frontmatter keys
+* Added the `markdown_alternate_content_sections` filter so integrations can add ordered body sections
+* Added the `markdown_alternate_cache_version` filter for integration-driven cache invalidation
 
 = 1.1.0 =
 * Added transient caching with a 24 hour default and post-modified validation
