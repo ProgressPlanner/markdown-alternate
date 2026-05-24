@@ -28,7 +28,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          tools: php-parallel-lint
+          tools: parallel-lint
           coverage: none
 
       - name: Lint PHP files
