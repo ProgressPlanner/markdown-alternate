@@ -97,7 +97,11 @@ class RewriteHandler {
      * @return void
      */
     public function parse_markdown_url(\WP $wp): void {
-        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+        // Use esc_url_raw() rather than sanitize_text_field() here: the latter
+        // strips every percent-encoded octet (%[a-f0-9]{2}), which destroys
+        // non-ASCII slugs (e.g. å/ä/ö, encoded as %c3%a5/%c3%a4/%c3%b6) and makes
+        // the post lookup below fail. esc_url_raw() preserves the encoding.
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '';
         $path = wp_parse_url($request_uri, PHP_URL_PATH);
         if ($path === false || $path === null) {
             return;
@@ -276,7 +280,9 @@ class RewriteHandler {
             return;
         }
 
-        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+        // esc_url_raw() preserves percent-encoded octets so the trailing-slash
+        // redirect works for non-ASCII slugs (see parse_markdown_url()).
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])) : '';
 
         // Enforce lowercase .md extension — reject wrong case and let WordPress 404.
         if (
