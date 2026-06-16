@@ -17,6 +17,10 @@ use MarkdownAlternate\Converter\MarkdownConverter;
  * - YAML frontmatter with metadata (title, date, author, categories, tags)
  * - H1 title heading
  * - HTML to markdown conversion
+ *
+ * Integrations can extend the output through two filters:
+ * - `markdown_alternate_frontmatter`       — add/modify YAML frontmatter keys.
+ * - `markdown_alternate_content_sections`  — add/reorder body sections.
  */
 class ContentRenderer {
 
@@ -46,11 +50,28 @@ class ContentRenderer {
         $transient_key = 'md_alt_cache_' . $post->ID;
         $cached_data   = get_transient( $transient_key );
 
+        /**
+         * Filters the cache version token mixed into the cache key.
+         *
+         * Integrations that derive markdown output from data outside post_content
+         * (e.g. postmeta) should return a token that changes when their data changes,
+         * so cached output is invalidated correctly. Alternatively, integrations may
+         * call delete_transient( 'md_alt_cache_' . $post_id ) on their own update hooks.
+         *
+         * @since 1.2.0
+         *
+         * @param string  $version The cache version token. Default empty string.
+         * @param WP_Post $post    The post being rendered.
+         */
+        $cache_version = (string) apply_filters( 'markdown_alternate_cache_version', '', $post );
+
         // Check if cache exists and post hasn't been modified since.
-        if ( is_array( $cached_data ) && isset( $cached_data['markdown'], $cached_data['modified'] ) ) {
-            if ( $post->post_modified === $cached_data['modified'] ) {
-                return $cached_data['markdown'];
-            }
+        if ( is_array( $cached_data )
+            && isset( $cached_data['markdown'], $cached_data['modified'], $cached_data['version'] )
+            && $post->post_modified === $cached_data['modified']
+            && $cache_version === $cached_data['version']
+        ) {
+            return $cached_data['markdown'];
         }
 
         $frontmatter = $this->generate_frontmatter($post);
@@ -74,9 +95,36 @@ class ContentRenderer {
             );
         }
 
-        $output = $frontmatter . "\n\n";
-        $output .= '# ' . $this->decode_entities($title) . "\n\n";
-        $output .= $body;
+        // Build ordered body sections. Integrations can add their own via the filter.
+        $default_sections = [
+            'title' => [
+                'priority' => 0,
+                'markdown' => '# ' . $this->decode_entities($title),
+            ],
+            'content' => [
+                'priority' => 100,
+                'markdown' => $body,
+            ],
+        ];
+
+        /**
+         * Filters the ordered list of body sections rendered after the frontmatter.
+         *
+         * Each section is an array with:
+         * - 'priority' (int)    — sort key, lower runs first. Title is 0, post_content is 100.
+         * - 'markdown' (string) — the markdown to emit. Empty strings are skipped.
+         *
+         * Section keys are arbitrary; use a unique prefix (e.g. "woo_price") to avoid
+         * collisions with other integrations and to allow targeted removal/replacement.
+         *
+         * @since 1.2.0
+         *
+         * @param array   $sections Default sections keyed by name.
+         * @param WP_Post $post     The post being rendered.
+         */
+        $sections = apply_filters( 'markdown_alternate_content_sections', $default_sections, $post );
+
+        $output = $frontmatter . "\n\n" . $this->render_sections( $sections );
 
         // Cache the result (default 24 hours).
 
@@ -91,77 +139,165 @@ class ContentRenderer {
         set_transient( $transient_key, array(
             'markdown' => $output,
             'modified' => $post->post_modified,
+            'version'  => $cache_version,
         ), $expiration );
 
         return $output;
     }
 
     /**
+     * Sort sections by priority and concatenate their markdown.
+     *
+     * @param array $sections Sections from the markdown_alternate_content_sections filter.
+     * @return string
+     */
+    private function render_sections(array $sections): string {
+        // Tolerate malformed entries from third-party filters.
+        $sections = array_filter( $sections, static function ( $section ) {
+            return is_array( $section )
+                && isset( $section['markdown'] )
+                && is_string( $section['markdown'] )
+                && trim( $section['markdown'] ) !== '';
+        } );
+
+        uasort( $sections, static function ( $a, $b ) {
+            $pa = isset( $a['priority'] ) ? (int) $a['priority'] : 100;
+            $pb = isset( $b['priority'] ) ? (int) $b['priority'] : 100;
+            return $pa <=> $pb;
+        } );
+
+        return implode( "\n\n", array_map(
+            static fn( $section ) => rtrim( $section['markdown'] ),
+            $sections
+        ) );
+    }
+
+    /**
      * Generate YAML frontmatter for a post.
+     *
+     * Builds an associative data array first, runs it through the
+     * `markdown_alternate_frontmatter` filter so integrations can add keys,
+     * and then serializes the result to YAML.
      *
      * @param WP_Post $post The post to generate frontmatter for.
      * @return string The YAML frontmatter block.
      */
     private function generate_frontmatter(WP_Post $post): string {
+        $data = [
+            'title'  => get_the_title( $post ),
+            'date'   => get_the_date( 'Y-m-d', $post ),
+            'author' => get_the_author_meta( 'display_name', $post->post_author ),
+        ];
+
+        $featured_image = get_the_post_thumbnail_url( $post->ID, 'full' );
+        if ( $featured_image ) {
+            $data['featured_image'] = $featured_image;
+        }
+
+        $categories = $this->collect_taxonomy_terms( 'category', $post->ID );
+        if ( $categories ) {
+            $data['categories'] = $categories;
+        }
+
+        $tags = $this->collect_taxonomy_terms( 'post_tag', $post->ID );
+        if ( $tags ) {
+            $data['tags'] = $tags;
+        }
+
+        /**
+         * Filters the frontmatter data array before it is serialized to YAML.
+         *
+         * Integrations can add scalar values, lists, or lists of associative arrays
+         * (mirroring the shape of `categories` / `tags`). Keys with `null` or empty
+         * values will be skipped.
+         *
+         * @since 1.2.0
+         *
+         * @param array   $data Associative array of frontmatter keys and values.
+         * @param WP_Post $post The post being rendered.
+         */
+        $data = apply_filters( 'markdown_alternate_frontmatter', $data, $post );
+
+        return $this->serialize_frontmatter( $data );
+    }
+
+    /**
+     * Collect taxonomy terms as an array of name + markdown URL pairs.
+     *
+     * @param string $taxonomy The taxonomy name (e.g., 'category', 'post_tag').
+     * @param int    $post_id  The post ID.
+     * @return array List of ['name' => ..., 'url' => ...] entries.
+     */
+    private function collect_taxonomy_terms(string $taxonomy, int $post_id): array {
+        $terms = get_the_terms( $post_id, $taxonomy );
+        if ( ! $terms || is_wp_error( $terms ) ) {
+            return [];
+        }
+
+        $out = [];
+        foreach ( $terms as $term ) {
+            $out[] = [
+                'name' => $term->name,
+                'url'  => $this->get_term_markdown_url( $term ),
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Serialize a frontmatter data array to a YAML block.
+     *
+     * Supports scalars, plain lists of scalars, and lists of associative arrays.
+     *
+     * @param array $data The frontmatter data.
+     * @return string The serialized YAML block (including delimiters).
+     */
+    private function serialize_frontmatter(array $data): string {
         $lines = ['---'];
 
-        // Title (always included)
-        $title = get_the_title($post);
-        $lines[] = 'title: "' . $this->escape_yaml($title) . '"';
+        foreach ( $data as $key => $value ) {
+            if ( $value === null || $value === '' || $value === [] ) {
+                continue;
+            }
 
-        // Date (always included)
-        $date = get_the_date('Y-m-d', $post);
-        $lines[] = 'date: ' . $date;
+            if ( is_array( $value ) ) {
+                // List of associative arrays (e.g. categories/tags).
+                if ( isset( $value[0] ) && is_array( $value[0] ) ) {
+                    $lines[] = $key . ':';
+                    foreach ( $value as $entry ) {
+                        $first = true;
+                        foreach ( $entry as $sub_key => $sub_value ) {
+                            $prefix  = $first ? '  - ' : '    ';
+                            $lines[] = $prefix . $sub_key . ': "' . $this->escape_yaml( (string) $sub_value ) . '"';
+                            $first   = false;
+                        }
+                    }
+                    continue;
+                }
 
-        // Author (always included)
-        $author = get_the_author_meta('display_name', $post->post_author);
-        $lines[] = 'author: "' . $this->escape_yaml($author) . '"';
+                // Plain list of scalars.
+                $lines[] = $key . ':';
+                foreach ( $value as $scalar ) {
+                    $lines[] = '  - "' . $this->escape_yaml( (string) $scalar ) . '"';
+                }
+                continue;
+            }
 
-        // Featured image (only if set)
-        $featured_image = get_the_post_thumbnail_url($post->ID, 'full');
-        if ($featured_image) {
-            $lines[] = 'featured_image: "' . $this->escape_yaml($featured_image) . '"';
-        }
-
-        // Categories (only if present and not WP_Error)
-        $category_lines = $this->format_taxonomy_terms('category', $post->ID);
-        if ($category_lines) {
-            $lines[] = 'categories:';
-            $lines = array_merge($lines, $category_lines);
-        }
-
-        // Tags (only if present and not WP_Error)
-        $tag_lines = $this->format_taxonomy_terms('post_tag', $post->ID);
-        if ($tag_lines) {
-            $lines[] = 'tags:';
-            $lines = array_merge($lines, $tag_lines);
+            // Scalars: quote strings, leave plain dates/numbers unquoted when safe.
+            if ( is_string( $value ) && preg_match( '/^\d{4}-\d{2}-\d{2}$/', $value ) ) {
+                $lines[] = $key . ': ' . $value;
+            } elseif ( is_int( $value ) || is_float( $value ) ) {
+                $lines[] = $key . ': ' . $value;
+            } elseif ( is_bool( $value ) ) {
+                $lines[] = $key . ': ' . ( $value ? 'true' : 'false' );
+            } else {
+                $lines[] = $key . ': "' . $this->escape_yaml( (string) $value ) . '"';
+            }
         }
 
         $lines[] = '---';
 
-        return implode("\n", $lines);
-    }
-
-    /**
-     * Format taxonomy terms as YAML lines.
-     *
-     * @param string $taxonomy The taxonomy name (e.g., 'category', 'post_tag').
-     * @param int $post_id The post ID.
-     * @return array Array of formatted YAML lines, or empty array if no terms.
-     */
-    private function format_taxonomy_terms(string $taxonomy, int $post_id): array {
-        $terms = get_the_terms($post_id, $taxonomy);
-        if (!$terms || is_wp_error($terms)) {
-            return [];
-        }
-
-        $lines = [];
-        foreach ($terms as $term) {
-            $lines[] = '  - name: "' . $this->escape_yaml($term->name) . '"';
-            $lines[] = '    url: "' . $this->get_term_markdown_url($term) . '"';
-        }
-
-        return $lines;
+        return implode( "\n", $lines );
     }
 
     /**
