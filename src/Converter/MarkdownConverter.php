@@ -7,6 +7,7 @@
 
 namespace MarkdownAlternate\Converter;
 
+use League\HTMLToMarkdown\Converter\TableConverter;
 use League\HTMLToMarkdown\HtmlConverter;
 
 /**
@@ -37,6 +38,17 @@ class MarkdownConverter {
             'hard_break'      => false,
             'list_item_style' => '-',
         ]);
+
+        // GFM tables are an opt-in extension, so createDefaultEnvironment()
+        // registers every converter the library ships EXCEPT TableConverter.
+        // Without this line <table> falls through to DefaultConverter, which
+        // concatenates cell text with no separators: a 4x3 pricing table
+        // arrives as "PlanPriceStorageSupportFree$05 GBCommunity...", and no
+        // consumer can recover the grid. That is the opposite of this plugin's
+        // purpose, since tables are the densest content an LLM can ingest.
+        // The library already ships table_pipe_escape and table_caption_side
+        // defaults for this converter — only the registration is missing.
+        $this->converter->getEnvironment()->addConverter(new TableConverter());
     }
 
     /**
