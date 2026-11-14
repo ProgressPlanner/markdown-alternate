@@ -185,6 +185,11 @@ try {
 	WC()->customer->set_shipping_country( 'NL' );
 	$md_alt_output = md_alt_woo_render( $md_alt_id );
 	md_alt_woo_assert( false !== strpos( $md_alt_output, '24.20' ), 'Displayed price includes shop tax settings' );
+	// Tax-inclusive catalog prices exercise exemption consistently on older WooCommerce too.
+	update_option( 'woocommerce_prices_include_tax', 'yes' );
+	$md_alt_product->set_regular_price( '24.20' );
+	$md_alt_product->set_price( '24.20' );
+	$md_alt_product->save();
 	WC()->customer->set_is_vat_exempt( true );
 	$md_alt_output = md_alt_woo_render( $md_alt_id );
 	md_alt_woo_assert( false === strpos( $md_alt_output, '24.20' ) && false !== strpos( $md_alt_output, '20.00' ), 'VAT-exempt customer receives their own displayed price' );

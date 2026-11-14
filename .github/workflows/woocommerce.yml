@@ -57,7 +57,11 @@ jobs:
           wp config create --path="$WP_PATH" --dbname=markdown_test --dbuser=root --dbpass=wordpress --dbhost=127.0.0.1
           wp config set DISABLE_WP_CRON true --raw --path="$WP_PATH"
           wp core install --path="$WP_PATH" --url=http://127.0.0.1:8897 --title=Tests --admin_user=tests --admin_password=local-test-only --admin_email=tests@example.test --skip-email
-          wp plugin install woocommerce --version="$WOOCOMMERCE_VERSION" --activate --path="$WP_PATH"
+          woocommerce_args=()
+          if [[ "$WOOCOMMERCE_VERSION" != latest ]]; then
+            woocommerce_args+=(--version="$WOOCOMMERCE_VERSION")
+          fi
+          wp plugin install woocommerce "${woocommerce_args[@]}" --activate --path="$WP_PATH"
           ln -s "$GITHUB_WORKSPACE" "$WP_PATH/wp-content/plugins/markdown-alternate"
           wp plugin activate markdown-alternate --path="$WP_PATH"
           wp rewrite structure '/%postname%/' --path="$WP_PATH"
