@@ -33,3 +33,6 @@ jobs:
 
       - name: Lint PHP files
         run: parallel-lint --exclude vendor --exclude node_modules .
+
+      - name: Test rendering hooks
+        run: php tests/run.php
