@@ -1,0 +1,76 @@
+name: WooCommerce Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  integration:
+    name: WP ${{ matrix.wordpress }} / Woo ${{ matrix.woocommerce }} / PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '7.4'
+            wordpress: '6.0'
+            woocommerce: '7.0.1'
+          - php: '8.3'
+            wordpress: 'latest'
+            woocommerce: 'latest'
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: wordpress
+          MYSQL_DATABASE: markdown_test
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -pwordpress"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli, dom
+          tools: wp-cli
+          coverage: none
+      - name: Install isolated WordPress and WooCommerce
+        env:
+          WP_PATH: ${{ runner.temp }}/wordpress
+          WORDPRESS_VERSION: ${{ matrix.wordpress }}
+          WOOCOMMERCE_VERSION: ${{ matrix.woocommerce }}
+        run: |
+          wp core download --path="$WP_PATH" --version="$WORDPRESS_VERSION"
+          wp config create --path="$WP_PATH" --dbname=markdown_test --dbuser=root --dbpass=wordpress --dbhost=127.0.0.1
+          wp config set DISABLE_WP_CRON true --raw --path="$WP_PATH"
+          wp core install --path="$WP_PATH" --url=http://127.0.0.1:8897 --title=Tests --admin_user=tests --admin_password=local-test-only --admin_email=tests@example.test --skip-email
+          wp plugin install woocommerce --version="$WOOCOMMERCE_VERSION" --activate --path="$WP_PATH"
+          ln -s "$GITHUB_WORKSPACE" "$WP_PATH/wp-content/plugins/markdown-alternate"
+          wp plugin activate markdown-alternate --path="$WP_PATH"
+          wp rewrite structure '/%postname%/' --path="$WP_PATH"
+      - name: Test products and HTTP endpoints
+        env:
+          WP_PATH: ${{ runner.temp }}/wordpress
+          MD_ALT_TEST_HTTP: '1'
+        run: |
+          wp server --host=127.0.0.1 --port=8897 --path="$WP_PATH" > "$RUNNER_TEMP/wp-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"; cat "$RUNNER_TEMP/wp-server.log"' EXIT
+          for attempt in {1..20}; do
+            if curl --silent --output /dev/null http://127.0.0.1:8897/; then break; fi
+            sleep 1
+          done
+          wp eval-file "$GITHUB_WORKSPACE/tests/woocommerce-integration.php" --path="$WP_PATH"

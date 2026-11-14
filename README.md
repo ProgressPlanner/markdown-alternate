@@ -117,6 +117,29 @@ Use Markdown Alternate to make your content easier to consume in AI pipelines, i
 
 Use it for headless workflows, ingestion jobs, indexing, summarization, or apps that benefit from cleaner source material than full HTML.
 
+## WooCommerce products
+
+With WooCommerce active, published products are available at their `.md` URL and
+through the same query parameter and Accept-header routes as posts and pages.
+Standalone variations are not exposed as separate Markdown pages.
+
+Product output includes typed metadata for SKU, currency, product type, prices,
+and stock; product categories, tags, and registered brands; a price/availability
+summary; the formatted short description; visible attributes; and available
+variations. Password protection and publication checks still apply.
+
+The body uses WooCommerce's displayed prices, including tax settings, currency,
+price ranges, active sales, and pricing filters. Numeric frontmatter prices are
+catalog values before display-tax adjustments; variable products use `price` and
+`price_max` for the minimum and maximum catalog prices. A future sale is not
+reported as an active sale.
+
+Product responses bypass the shared Markdown transient cache and send private,
+no-store HTTP headers because prices can depend on the current customer. This
+also keeps stock, price, and variation updates fresh. Posts and pages retain their
+existing caching behavior. Large variable products take more work to render because
+the integration lists all available variations.
+
 ## Developer hooks
 
 ### Enable custom post types
@@ -216,6 +239,14 @@ An unchanged section list retains the existing output exactly, including spacing
 for empty posts. Returning a non-array from a rendering filter falls back to its
 default value.
 
+### Disable caching for customer-dependent output
+
+Return `false` from `markdown_alternate_cache_enabled` to bypass both transient
+reads and writes. The filter receives the `WP_Post` as its second argument. HTTP
+responses also send private, no-store headers and mark the page as uncacheable.
+The WooCommerce integration disables this cache for products; posts and pages
+still default to cached output.
+
 ### Invalidate integration data
 
 Frontmatter and section filters run only when the cached document is regenerated.
@@ -240,6 +271,21 @@ Run `php tests/run.php` after installing dependencies. These standalone tests us
 WordPress API doubles and the real Markdown converter, and compare default output
 with fixtures captured from `main` at commit `7afba03`. CI runs them on PHP 7.4–8.3;
 they do not replace a full WordPress integration test.
+
+### Run WooCommerce integration tests
+
+Use an isolated test WordPress installation with WooCommerce and this plugin
+active, and run:
+
+```bash
+wp eval-file /path/to/markdown-alternate/tests/woocommerce-integration.php --path=/path/to/test-wordpress
+```
+
+The test creates and removes fixture products, terms, and a tax rate, and restores
+the shop settings it changes. Do not run it against a production shop. To include
+HTTP checks, start `wp server` for that installation and set `MD_ALT_TEST_HTTP=1`.
+The site's configured URL must point to that server. CI tests WordPress 6.0 with
+WooCommerce 7.0.1 on PHP 7.4, plus current WordPress and WooCommerce on PHP 8.3.
 
 ## Content processing notes
 

@@ -257,6 +257,34 @@ $md_alt_tests['Content filters still run before conversion and section filters']
 	md_alt_assert_contains( "# Post Title\n\n**Expanded**", ( new ContentRenderer() )->render( $post ) );
 };
 
+$md_alt_tests['Disabling cache ignores existing entries and never stores customer output'] = static function () {
+	$post     = md_alt_test_fixture( 'ordinary' );
+	$renderer = new ContentRenderer();
+	$renderer->render( $post );
+	$original_cache = get_transient( 'md_alt_cache_17' );
+	add_filter(
+		'markdown_alternate_cache_enabled',
+		static function () {
+			return false;
+		}
+	);
+	$post->post_content = '<p>Customer price one</p>';
+	md_alt_assert_contains( 'Customer price one', $renderer->render( $post ) );
+	$post->post_content = '<p>Customer price two</p>';
+	md_alt_assert_contains( 'Customer price two', $renderer->render( $post ) );
+	md_alt_assert_same( $original_cache, get_transient( 'md_alt_cache_17' ) );
+	delete_transient( 'md_alt_cache_17' );
+	$renderer->render( $post );
+	md_alt_assert_same( false, get_transient( 'md_alt_cache_17' ) );
+};
+
+$md_alt_tests['Integration registration leaves hooks unchanged without WooCommerce'] = static function () {
+	md_alt_test_fixture( 'ordinary' );
+	$plugin = ( new ReflectionClass( \MarkdownAlternate\Plugin::class ) )->newInstanceWithoutConstructor();
+	$plugin->register_integrations();
+	md_alt_assert_same( array(), $GLOBALS['md_alt_test_state']['filters'] );
+};
+
 $md_alt_failures = 0;
 foreach ( $md_alt_tests as $md_alt_name => $md_alt_test ) {
 	try {

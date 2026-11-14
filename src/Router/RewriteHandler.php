@@ -226,6 +226,16 @@ class RewriteHandler {
             exit;
         }
 
+		// Keep customer-dependent output out of HTTP and WordPress page caches too.
+		if ( ! apply_filters( 'markdown_alternate_cache_enabled', true, $post ) ) {
+			nocache_headers();
+			header( 'Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0' );
+			if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+				define( 'DONOTCACHEPAGE', true );
+			}
+			do_action( 'litespeed_control_set_nocache', 'Customer-dependent Markdown output' );
+		}
+
         $markdown = $this->get_renderer()->render($post);
 
         $this->set_response_headers($post, $markdown);
