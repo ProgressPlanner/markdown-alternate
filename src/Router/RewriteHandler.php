@@ -372,6 +372,18 @@ class RewriteHandler {
             return;
         }
 
+		// Prevent shared and WordPress page caches from storing this redirect.
+		// Caches that correctly honour Vary can opt out of both layers:
+		// Use the markdown_alternate_disable_page_cache_on_redirect filter to return false.
+		if ( apply_filters( 'markdown_alternate_disable_page_cache_on_redirect', true ) ) {
+			header( 'Cache-Control: private' );
+
+			if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+				define( 'DONOTCACHEPAGE', true );
+			}
+			do_action( 'litespeed_control_set_nocache', 'Content negotiation redirect' );
+		}
+
         // 303 See Other: redirect to markdown URL with Vary for cache correctness.
         header('Vary: Accept');
         wp_safe_redirect($md_url, 303);
