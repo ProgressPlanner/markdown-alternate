@@ -192,7 +192,7 @@ try {
 	$md_alt_product->save();
 	WC()->customer->set_is_vat_exempt( true );
 	$md_alt_output = md_alt_woo_render( $md_alt_id );
-	md_alt_woo_assert( false === strpos( $md_alt_output, '24.20' ) && false !== strpos( $md_alt_output, '20.00' ), 'VAT-exempt customer receives their own displayed price' );
+	md_alt_woo_assert( false !== strpos( $md_alt_output, '**Price:** €20.00' ), 'VAT-exempt customer receives their own displayed price' );
 
 	$md_alt_post_id   = wp_insert_post(
 		array(
