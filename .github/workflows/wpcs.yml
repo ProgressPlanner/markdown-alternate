@@ -1,0 +1,59 @@
+name: WordPress Coding Standards
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phpcs:
+    name: WPCS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: Install WPCS
+        run: |
+          composer global config allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer global require --no-interaction --no-progress wp-coding-standards/wpcs:^3.1 dealerdirect/phpcodesniffer-composer-installer:^1.0
+
+      - name: Setup reviewdog
+        uses: reviewdog/action-setup@v1
+        with:
+          reviewdog_version: v0.20.3
+
+      - name: Check changed PHP lines
+        run: |
+          # For PRs, checkout selects the merge commit. Its first parent is
+          # the actual base, even if the event payload's base SHA is stale.
+          base=$(git rev-parse HEAD^)
+          report="$RUNNER_TEMP/phpcs.xml"
+          status=0
+          "$(composer global config bin-dir --absolute)/phpcs" \
+            --standard=WordPress --extensions=php --ignore=vendor,node_modules \
+            --report=checkstyle . > "$report" || status=$?
+          # PHPCS uses 1-3 for findings; other failures must not look like a pass.
+          if (( status > 3 )); then
+            cat "$report"
+            exit "$status"
+          fi
+          reviewdog -f=checkstyle -reporter=local -filter-mode=added -fail-level=any \
+            -diff="git diff --no-ext-diff --unified=0 $base HEAD" < "$report"

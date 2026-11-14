@@ -1,0 +1,23 @@
+name: Composer Diff
+
+on:
+  pull_request:
+    paths:
+      - composer.lock
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  diff:
+    name: Composer Diff
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Composer Diff
+        uses: IonBazan/composer-diff-action@v1
