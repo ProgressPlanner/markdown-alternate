@@ -114,7 +114,7 @@ class ContentRenderer {
         $title = get_the_title($post);
         $content_lines['title'] = array(
             'type'    => 'string',
-            'content' => $this->escape_yaml($title)
+            'content' => $title
         );
 
         // Date (always included)
@@ -128,7 +128,7 @@ class ContentRenderer {
         $author = get_the_author_meta('display_name', $post->post_author);
         $content_lines['author'] = array(
             'type'    => 'string',
-            'content' => $this->escape_yaml($author)
+            'content' => $author
         );
 
         // Featured image (only if set)
@@ -136,7 +136,7 @@ class ContentRenderer {
         if ($featured_image) {
             $content_lines['featured_image'] = array(
                 'type'    => 'url',
-                'content' => $this->escape_yaml($featured_image)
+                'content' => $featured_image
             );
         }
 
@@ -157,7 +157,7 @@ class ContentRenderer {
                     $content_lines[$key]['items'][] = array(
                         'name' => array(
                             'type'    => 'string',
-                            'content' => $this->escape_yaml($term->name)
+                            'content' => $term->name
                         ),
                         'url' => array(
                             'type'    => 'url',
@@ -188,7 +188,7 @@ class ContentRenderer {
                             // Skip empty type values or if content is not set
                             continue;
                         }
-                        $item_value = $this->format_yaml_value($this->escape_yaml($item_value['content']), $item_value['type']);
+                        $item_value = $this->format_yaml_value($item_value['content'], $item_value['type']);
                         if ( $i === 0 ) {
                             $lines[] = '  - ' . $item_key . ': ' . $item_value;
                         } else {
