@@ -251,7 +251,7 @@ class RewriteHandler {
 
         if (is_singular()) {
             $post = get_queried_object();
-        } elseif ('page' === get_option('show_on_front') && (is_front_page() || is_home())) {
+        } elseif ('page' === get_option('show_on_front') && $this->is_front_page_format_request()) {
             // Static front page: the extra ?format= query var can prevent
             // WordPress from recognising the request as singular, so it falls
             // back to the blog-post index.
@@ -270,6 +270,31 @@ class RewriteHandler {
         }
 
         $this->serve_markdown_response($post);
+    }
+
+    /**
+     * Check whether a format request targets the static front page.
+     *
+     * The extra query variable can make the root request look like a posts
+     * index. A real posts page must not be replaced by the static front page.
+     *
+     * @return bool Whether this is the front page or its root URL fallback.
+     */
+    private function is_front_page_format_request(): bool {
+        if (is_front_page()) {
+            return true;
+        }
+
+        if (!is_home() || is_paged() || get_query_var('page') || get_query_var('page_id') || get_query_var('pagename')) {
+            return false;
+        }
+
+        $request_uri = isset($_SERVER['REQUEST_URI']) ? wp_unslash($_SERVER['REQUEST_URI']) : '';
+        $request_path = wp_parse_url($request_uri, PHP_URL_PATH);
+        $home_path = wp_parse_url(home_url('/'), PHP_URL_PATH);
+
+        return is_string($request_path)
+            && rtrim($request_path, '/') === rtrim((string) $home_path, '/');
     }
 
     /**
