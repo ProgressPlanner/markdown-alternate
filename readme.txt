@@ -100,6 +100,12 @@ Yes. When Yoast SEO is active and generating `llms.txt`, Markdown Alternate can 
 
 == Changelog ==
 
+= Unreleased =
+* Added filters for frontmatter taxonomies, typed fields, and serialized YAML lines
+* Added ordered markdown body sections for integrations
+* Added cache version tokens for data outside post content
+* Preserved default post and page output, with standalone regression coverage
+
 = 1.1.0 =
 * Added transient caching with a 24 hour default and post-modified validation
 * Added the `markdown_alternate_cache_expiration` filter for cache control
