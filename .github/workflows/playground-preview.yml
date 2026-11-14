@@ -1,7 +1,8 @@
 name: Playground Preview
 
 on:
-  pull_request:
+  # This job only reads PR metadata; it never checks out or executes PR code.
+  pull_request_target:
     types: [opened, synchronize, reopened]
 
 permissions:
@@ -16,6 +17,22 @@ jobs:
       - name: Add Playground preview
         uses: WordPress/action-wp-playground-pr-preview@v2
         with:
-          plugin-path: .
+          # The action's automatic blueprint uses the base repository, which
+          # cannot resolve a branch that only exists in a contributor's fork.
+          blueprint: |
+            {
+              "steps": [
+                {
+                  "step": "installPlugin",
+                  "pluginData": {
+                    "resource": "git:directory",
+                    "url": ${{ toJSON(github.event.pull_request.head.repo.clone_url) }},
+                    "ref": ${{ toJSON(github.event.pull_request.head.sha) }},
+                    "path": "/"
+                  },
+                  "options": { "activate": true }
+                }
+              ]
+            }
           mode: comment
           github-token: ${{ secrets.GITHUB_TOKEN }}
