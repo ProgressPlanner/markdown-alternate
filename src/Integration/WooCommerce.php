@@ -219,12 +219,12 @@ class WooCommerce {
             return trim( $text );
         };
 
-        if ( $sale !== '' && $sale !== null && $regular !== '' && $regular !== null && (float) $sale < (float) $regular ) {
-            return $clean( wc_price( $sale ) ) . ' (was ' . $clean( wc_price( $regular ) ) . ')';
+        if ( $product->is_on_sale() && $sale !== '' && $sale !== null && $regular !== '' && $regular !== null ) {
+            return $clean( wc_price( wc_get_price_to_display( $product ) ) ) . ' (was ' . $clean( wc_price( wc_get_price_to_display( $product, [ 'price' => $regular ] ) ) ) . ')';
         }
 
         if ( $price !== '' && $price !== null ) {
-            return $clean( wc_price( $price ) );
+            return $clean( wc_price( wc_get_price_to_display( $product ) ) );
         }
 
         return '';
