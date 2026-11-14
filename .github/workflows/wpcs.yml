@@ -41,14 +41,10 @@ jobs:
           reviewdog_version: v0.20.3
 
       - name: Check changed PHP lines
-        env:
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
-          if [[ -n "$PR_BASE_SHA" ]]; then
-            base=$(git merge-base "$PR_BASE_SHA" HEAD)
-          else
-            base=$(git rev-parse HEAD^)
-          fi
+          # For PRs, checkout selects the merge commit. Its first parent is
+          # the actual base, even if the event payload's base SHA is stale.
+          base=$(git rev-parse HEAD^)
           report="$RUNNER_TEMP/phpcs.xml"
           status=0
           "$(composer global config bin-dir --absolute)/phpcs" \
