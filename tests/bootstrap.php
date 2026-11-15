@@ -6,7 +6,7 @@
  */
 
 // Test doubles intentionally retain WordPress API names and omit repetitive API docs.
-// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals, Generic.Files.OneObjectStructurePerFile, Squiz.Commenting.FunctionComment.Missing, Squiz.Commenting.VariableComment.Missing, Squiz.Commenting.ClassComment.Missing, WordPress.Files.FileName.InvalidClassFileName, Universal.Files.SeparateFunctionsFromOO.Mixed, Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals, Generic.Files.OneObjectStructurePerFile, Squiz.Commenting.FunctionComment.Missing, Squiz.Commenting.VariableComment.Missing, Squiz.Commenting.ClassComment.Missing, WordPress.Files.FileName.InvalidClassFileName, Universal.Files.SeparateFunctionsFromOO.Mixed, Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed, Generic.CodeAnalysis.UnusedFunctionParameter.Found, WordPress.NamingConventions.ValidFunctionName.FunctionNameInvalid
 
 class WP_Post {
 	public $ID            = 17;
@@ -40,6 +40,32 @@ function md_alt_test_reset() {
 		'author'     => 'Author Name',
 		'image'      => false,
 		'renders'    => 0,
+		'meta'       => array(),
+		'yoast'      => null,
+	);
+}
+
+function get_post_meta( $post_id, $key, $single = false ) {
+	return $GLOBALS['md_alt_test_state']['meta'][ $post_id ][ $key ] ?? '';
+}
+
+/**
+ * Yoast SEO surface double. State 'yoast' is null (no indexable), 'throw',
+ * or the robots array that the post's meta surface reports.
+ *
+ * @return object Surface with a meta->for_post() method.
+ */
+function YoastSEO() {
+	return (object) array(
+		'meta' => new class() {
+			public function for_post( $post_id ) {
+				$yoast = $GLOBALS['md_alt_test_state']['yoast'];
+				if ( 'throw' === $yoast ) {
+					throw new RuntimeException( 'Indexable unavailable.' );
+				}
+				return null === $yoast ? false : (object) array( 'robots' => $yoast );
+			}
+		},
 	);
 }
 

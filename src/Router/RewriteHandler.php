@@ -160,6 +160,11 @@ class RewriteHandler {
             return;
         }
 
+		// Noindexed and opted out: leave the request alone, like any other ineligible post.
+		if ( PostTypeSupport::should_skip_noindexed( $post ) ) {
+			return;
+		}
+
         // Cache post for handle_markdown_request
         $this->markdown_post = $post;
 
@@ -208,6 +213,10 @@ class RewriteHandler {
         if (get_post_status($post) !== 'publish') {
             return false;
         }
+
+		if ( PostTypeSupport::should_skip_noindexed( $post ) ) {
+			return false;
+		}
 
         return true;
     }
@@ -345,9 +354,18 @@ class RewriteHandler {
             return;
         }
 
-        if (!$this->validate_post_for_markdown($post)) {
-            return;
-        }
+		if ( ! $this->validate_post_for_markdown( $post ) ) {
+			// A skipped noindexed page still resolves through the pagename rewrite
+			// rule, and returning here would render its HTML template at the .md
+			// URL. Send a 404 instead, the answer a skipped noindexed post gets.
+			if ( PostTypeSupport::should_skip_noindexed( $post ) ) {
+				global $wp_query;
+				$wp_query->set_404();
+				status_header( 404 );
+				nocache_headers();
+			}
+			return;
+		}
 
         $this->serve_markdown_response($post);
     }
@@ -399,6 +417,14 @@ class RewriteHandler {
         if (strpos($accept, 'text/markdown') === false) {
             return;
         }
+
+		// Never redirect to a .md URL that would 404: serve the HTML instead.
+		if ( is_singular() ) {
+			$queried = get_queried_object();
+			if ( $queried instanceof WP_Post && PostTypeSupport::should_skip_noindexed( $queried ) ) {
+				return;
+			}
+		}
 
         $canonical = $this->get_current_canonical_url();
         if (!$canonical) {

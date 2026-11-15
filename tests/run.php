@@ -9,6 +9,7 @@
 // phpcs:disable WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents, WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
 
 use MarkdownAlternate\Output\ContentRenderer;
+use MarkdownAlternate\PostTypeSupport;
 
 require __DIR__ . '/bootstrap.php';
 require dirname( __DIR__ ) . '/vendor/autoload.php';
@@ -255,6 +256,79 @@ $md_alt_tests['Content filters still run before conversion and section filters']
 		}
 	);
 	md_alt_assert_contains( "# Post Title\n\n**Expanded**", ( new ContentRenderer() )->render( $post ) );
+};
+
+$md_alt_tests['Yoast effective robots noindex marks the post noindexed'] = static function () {
+	$post                                  = md_alt_test_fixture( 'ordinary' );
+	$GLOBALS['md_alt_test_state']['yoast'] = array(
+		'index'  => 'noindex',
+		'follow' => 'follow',
+	);
+	md_alt_assert_same( true, PostTypeSupport::is_noindexed( $post ), 'noindex' );
+};
+
+$md_alt_tests['Yoast effective robots index wins over a stale per-post meta key'] = static function () {
+	$post                                  = md_alt_test_fixture( 'ordinary' );
+	$GLOBALS['md_alt_test_state']['yoast'] = array(
+		'index'  => 'index',
+		'follow' => 'follow',
+	);
+	$GLOBALS['md_alt_test_state']['meta'][ $post->ID ]['_yoast_wpseo_meta-robots-noindex'] = '1';
+	md_alt_assert_same( false, PostTypeSupport::is_noindexed( $post ), 'index' );
+};
+
+$md_alt_tests['Without an indexable the per-post meta key decides'] = static function () {
+	$post = md_alt_test_fixture( 'ordinary' );
+	md_alt_assert_same( false, PostTypeSupport::is_noindexed( $post ), 'no meta' );
+	$GLOBALS['md_alt_test_state']['meta'][ $post->ID ]['_yoast_wpseo_meta-robots-noindex'] = '1';
+	md_alt_assert_same( true, PostTypeSupport::is_noindexed( $post ), 'meta noindex' );
+	$GLOBALS['md_alt_test_state']['meta'][ $post->ID ]['_yoast_wpseo_meta-robots-noindex'] = '2';
+	md_alt_assert_same( false, PostTypeSupport::is_noindexed( $post ), 'meta forced index' );
+};
+
+$md_alt_tests['A failing Yoast surface falls back to the per-post meta key'] = static function () {
+	$post                                  = md_alt_test_fixture( 'ordinary' );
+	$GLOBALS['md_alt_test_state']['yoast'] = 'throw';
+	md_alt_assert_same( false, PostTypeSupport::is_noindexed( $post ), 'throw, no meta' );
+	$GLOBALS['md_alt_test_state']['meta'][ $post->ID ]['_yoast_wpseo_meta-robots-noindex'] = '1';
+	md_alt_assert_same( true, PostTypeSupport::is_noindexed( $post ), 'throw, meta noindex' );
+};
+
+$md_alt_tests['A robots value without an index key falls back to the per-post meta key'] = static function () {
+	$post                                  = md_alt_test_fixture( 'ordinary' );
+	$GLOBALS['md_alt_test_state']['yoast'] = array( 'follow' => 'nofollow' );
+	md_alt_assert_same( false, PostTypeSupport::is_noindexed( $post ), 'no index key, no meta' );
+	$GLOBALS['md_alt_test_state']['meta'][ $post->ID ]['_yoast_wpseo_meta-robots-noindex'] = '1';
+	md_alt_assert_same( true, PostTypeSupport::is_noindexed( $post ), 'no index key, meta noindex' );
+};
+
+$md_alt_tests['Noindexed posts keep their markdown unless the site opts in'] = static function () {
+	$post                                  = md_alt_test_fixture( 'ordinary' );
+	$GLOBALS['md_alt_test_state']['yoast'] = array( 'index' => 'noindex' );
+	md_alt_assert_same( false, PostTypeSupport::should_skip_noindexed( $post ), 'default off' );
+	add_filter(
+		'markdown_alternate_skip_noindexed',
+		static function () {
+			return true;
+		}
+	);
+	md_alt_assert_same( true, PostTypeSupport::should_skip_noindexed( $post ), 'opted in' );
+};
+
+$md_alt_tests['Opting in never skips an indexed post and receives the post'] = static function () {
+	$post                                  = md_alt_test_fixture( 'ordinary' );
+	$GLOBALS['md_alt_test_state']['yoast'] = array( 'index' => 'index' );
+	add_filter(
+		'markdown_alternate_skip_noindexed',
+		static function ( $skip, $filtered_post ) use ( $post ) {
+			md_alt_assert_same( false, $skip, 'default' );
+			md_alt_assert_same( $post, $filtered_post, 'post' );
+			return true;
+		},
+		10,
+		2
+	);
+	md_alt_assert_same( false, PostTypeSupport::should_skip_noindexed( $post ), 'indexed' );
 };
 
 $md_alt_failures = 0;
