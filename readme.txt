@@ -110,6 +110,7 @@ Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__ret
 * Added cache version tokens for data outside post content
 * Preserved default post and page output, with standalone regression coverage
 * Added the `markdown_alternate_skip_noindexed` filter to withhold markdown for posts Yoast SEO marks noindex
+* Markdown responses now send `X-Robots-Tag: noindex`, so the HTML page stays the only indexable copy
 
 = 1.1.0 =
 * Added transient caching with a 24 hour default and post-modified validation

@@ -373,8 +373,8 @@ class RewriteHandler {
     /**
      * Set all required HTTP headers for markdown response.
      *
-     * Sets 200 status, Content-Type, Vary, Link (canonical), X-Content-Type-Options,
-     * and X-Markdown-Tokens headers.
+	 * Sets 200 status, Content-Type, Vary, Link (canonical), X-Content-Type-Options,
+	 * X-Robots-Tag and X-Markdown-Tokens headers.
      *
      * @param WP_Post $post     The post being served.
      * @param string  $markdown The rendered markdown content.
@@ -394,6 +394,11 @@ class RewriteHandler {
 
         // Prevent MIME sniffing.
         header('X-Content-Type-Options: nosniff');
+
+		// The HTML page is the indexable canonical; the .md copy exists for
+		// agents. Keep it out of search indexes even when a crawler ignores
+		// the canonical Link header above.
+		header( 'X-Robots-Tag: noindex' );
 
         // Estimated token count (~4 chars per token).
         header('X-Markdown-Tokens: ' . (int) (strlen($markdown) / 4));
