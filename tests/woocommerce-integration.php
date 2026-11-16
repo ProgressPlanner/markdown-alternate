@@ -88,6 +88,8 @@ try {
 	md_alt_woo_assert( false !== strpos( $md_alt_output, "price: 10\n" ) && false !== strpos( $md_alt_output, 'sale_price: 10' ), 'Active sale uses numeric frontmatter fields' );
 	md_alt_woo_assert( false !== strpos( $md_alt_output, '~~€20.00~~' ) && false === strpos( $md_alt_output, 'Original price was' ) && false === strpos( $md_alt_output, '<?xml' ), 'Sale display preserves strikethrough without duplicated accessibility text' );
 	md_alt_woo_assert( false !== strpos( $md_alt_output, 'stock_quantity: 0' ), 'Zero stock retained' );
+	md_alt_woo_assert( false !== strpos( $md_alt_output, "prices_include_tax: false\n" ), 'Catalog prices state that tax is excluded when taxes are off' );
+	md_alt_woo_assert( false !== strpos( $md_alt_output, '**SKU:** `md-alt-test-' ), 'SKU rendered as an unescaped code span' );
 	md_alt_woo_assert( false !== strpos( $md_alt_output, '[link](https://example.com)' ) && false !== strpos( $md_alt_output, '- One' ), 'Short description keeps links and lists' );
 	md_alt_woo_assert( false === strpos( $md_alt_output, '## Attributes' ) && false === strpos( $md_alt_output, '## Variations' ), 'No empty product sections' );
 	md_alt_woo_assert( false === get_transient( 'md_alt_cache_' . $md_alt_id ), 'Product output is not stored in the shared cache' );
@@ -102,14 +104,19 @@ try {
 	$md_alt_visible->set_name( 'Material' );
 	$md_alt_visible->set_options( array( 'Cotton', 'Linen' ) );
 	$md_alt_visible->set_visible( true );
+	$md_alt_weight = new WC_Product_Attribute();
+	$md_alt_weight->set_name( 'Weight' );
+	$md_alt_weight->set_options( array( '1.5 kg (approx.) *heavy*' ) );
+	$md_alt_weight->set_visible( true );
 	$md_alt_hidden = new WC_Product_Attribute();
 	$md_alt_hidden->set_name( 'Internal note' );
 	$md_alt_hidden->set_options( array( 'DO NOT EXPOSE' ) );
 	$md_alt_hidden->set_visible( false );
-	$md_alt_product->set_attributes( array( $md_alt_visible, $md_alt_hidden ) );
+	$md_alt_product->set_attributes( array( $md_alt_visible, $md_alt_weight, $md_alt_hidden ) );
 	$md_alt_product->save();
 	$md_alt_output = md_alt_woo_render( $md_alt_id );
 	md_alt_woo_assert( false !== strpos( $md_alt_output, 'Cotton, Linen' ) && false === strpos( $md_alt_output, 'DO NOT EXPOSE' ), 'Only visible attributes included' );
+	md_alt_woo_assert( false !== strpos( $md_alt_output, '1.5 kg (approx.) \\*heavy\\*' ), 'Attribute values escape only inline Markdown characters' );
 
 	$md_alt_variable = new WC_Product_Variable();
 	$md_alt_variable->set_name( 'Markdown variable' );
@@ -193,6 +200,7 @@ try {
 	WC()->customer->set_is_vat_exempt( true );
 	$md_alt_output = md_alt_woo_render( $md_alt_id );
 	md_alt_woo_assert( false !== strpos( $md_alt_output, '**Price:** €20.00' ), 'VAT-exempt customer receives their own displayed price' );
+	md_alt_woo_assert( false !== strpos( $md_alt_output, "prices_include_tax: true\n" ) && false !== strpos( $md_alt_output, "price: 24.20\n" ), 'Tax-inclusive catalog prices are flagged in frontmatter' );
 
 	$md_alt_post_id   = wp_insert_post(
 		array(

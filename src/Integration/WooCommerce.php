@@ -124,6 +124,13 @@ class WooCommerce {
 				);
 			}
 		}
+		if ( isset( $values['price'] ) && '' !== $values['price'][1] && null !== $values['price'][1] ) {
+			// Catalog prices do not depend on the requester; state whether they include tax.
+			$fields['prices_include_tax'] = array(
+				'type'    => 'boolean',
+				'content' => wc_prices_include_tax(),
+			);
+		}
 		return $fields;
 	}
 

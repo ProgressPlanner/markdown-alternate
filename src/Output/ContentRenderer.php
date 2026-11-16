@@ -349,11 +349,13 @@ class ContentRenderer {
 	 * Format a value for YAML output based on its type.
 	 *
 	 * @param string $value The value to format.
-	 * @param string $type The type of the value (e.g. 'string', 'date', 'url', 'number').
+	 * @param string $type The type of the value (e.g. 'string', 'date', 'url', 'number', 'boolean').
 	 * @return string The formatted value for YAML.
 	 */
 	private function format_yaml_value( $value, $type ) {
 		switch ( $type ) {
+			case 'boolean':
+				return $value ? 'true' : 'false';
 			case 'date':
 			case 'number':
 				return $value;

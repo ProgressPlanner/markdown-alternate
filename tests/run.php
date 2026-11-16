@@ -81,6 +81,14 @@ $md_alt_tests['Typed metadata and taxonomy hooks remain compatible with product 
 				'type'    => 'number',
 				'content' => 0,
 			);
+			$fields['taxed']    = array(
+				'type'    => 'boolean',
+				'content' => true,
+			);
+			$fields['exempt']   = array(
+				'type'    => 'boolean',
+				'content' => false,
+			);
 			$fields['specs']    = array(
 				'type'  => 'array',
 				'items' => array(
@@ -114,7 +122,7 @@ $md_alt_tests['Typed metadata and taxonomy hooks remain compatible with product 
 		2
 	);
 	$output = ( new ContentRenderer() )->render( $post );
-	foreach ( array( 'price: 12.50', 'currency: "EUR"', 'stock: 0', 'categories:', 'brands:', 'url: "/product-category/books.md"', 'value: 0', "custom_flag: true\n---" ) as $fragment ) {
+	foreach ( array( 'price: 12.50', 'currency: "EUR"', 'stock: 0', "taxed: true\n", "exempt: false\n", 'categories:', 'brands:', 'url: "/product-category/books.md"', 'value: 0', "custom_flag: true\n---" ) as $fragment ) {
 		md_alt_assert_contains( $fragment, $output );
 	}
 	md_alt_assert_contains( 'name: "A \\"quote\\" and \\\\ slash"', $output );

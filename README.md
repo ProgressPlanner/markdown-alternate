@@ -130,9 +130,11 @@ variations. Password protection and publication checks still apply.
 
 The body uses WooCommerce's displayed prices, including tax settings, currency,
 price ranges, active sales, and pricing filters. Numeric frontmatter prices are
-catalog values before display-tax adjustments; variable products use `price` and
-`price_max` for the minimum and maximum catalog prices. A future sale is not
-reported as an active sale.
+catalog values before display-tax adjustments, so they do not depend on who
+requests the page; `prices_include_tax` says whether those values include tax.
+Variable products use `price` and `price_max` for the minimum and maximum catalog
+prices. A future sale is not reported as an active sale. SKUs in the body are
+code spans so they can be copied exactly.
 
 Product responses bypass the shared Markdown transient cache and send private,
 no-store HTTP headers because prices can depend on the current customer. This
@@ -178,7 +180,8 @@ when you need the post. Normal post and page output stays unchanged without filt
 | `markdown_alternate_frontmatter_lines` | Serialized YAML lines, including the opening `---`, before the closing `---` is added. |
 
 Scalar fields use `type` and `content`. Use `string` or `url` for quoted values,
-`number` for unquoted numbers, and `date` for an unquoted date. Supply raw values:
+`number` for unquoted numbers, `boolean` for `true`/`false`, and `date` for an
+unquoted date. Supply raw values:
 the renderer decodes HTML entities and escapes quoted values once. Empty strings
 and zero are retained; fields without a type or with null content are skipped.
 
