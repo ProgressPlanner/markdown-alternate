@@ -97,7 +97,11 @@ class RewriteHandler {
      * @return void
      */
     public function parse_markdown_url(\WP $wp): void {
-        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+		// Use esc_url_raw() rather than sanitize_text_field() here: the latter
+		// strips every percent-encoded octet (%[a-f0-9]{2}), which destroys
+		// non-ASCII slugs (e.g. å/ä/ö, encoded as %c3%a5/%c3%a4/%c3%b6) and makes
+		// the post lookup below fail. esc_url_raw() preserves the encoding.
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
         $path = wp_parse_url($request_uri, PHP_URL_PATH);
         if ($path === false || $path === null) {
             return;
@@ -237,32 +241,65 @@ class RewriteHandler {
      *
      * @return void
      */
-    public function handle_format_parameter(): void {
-        // Skip if already a markdown request (URL takes precedence over query parameter).
-        if (get_query_var('markdown_request')) {
-            return;
-        }
+	public function handle_format_parameter(): void {
+		// Skip if already a markdown request (URL takes precedence over query parameter).
+		if ( get_query_var( 'markdown_request' ) ) {
+			return;
+		}
 
-        if (get_query_var('format') !== 'markdown') {
-            return;
-        }
+		if ( get_query_var( 'format' ) !== 'markdown' ) {
+			return;
+		}
 
-        if (!is_singular()) {
-            return;
-        }
+		$post = null;
 
-        $post = get_queried_object();
+		if ( is_singular() ) {
+			$post = get_queried_object();
+		} elseif ( 'page' === get_option( 'show_on_front' ) && $this->is_front_page_format_request() ) {
+			// Static front page: the extra ?format= query var can prevent
+			// WordPress from recognising the request as singular, so it falls
+			// back to the blog-post index.
+			$page_on_front = (int) get_option( 'page_on_front' );
+			if ( $page_on_front ) {
+				$post = get_post( $page_on_front );
+			}
+		}
 
-        if (!$post instanceof WP_Post) {
-            return;
-        }
+		if ( ! $post instanceof WP_Post ) {
+			return;
+		}
 
-        if (!$this->validate_post_for_markdown($post)) {
-            return;
-        }
+		if ( ! $this->validate_post_for_markdown( $post ) ) {
+			return;
+		}
 
-        $this->serve_markdown_response($post);
-    }
+		$this->serve_markdown_response( $post );
+	}
+
+	/**
+	 * Check whether a format request targets the static front page.
+	 *
+	 * The extra query variable can make the root request look like a posts
+	 * index. A real posts page must not be replaced by the static front page.
+	 *
+	 * @return bool Whether this is the front page or its root URL fallback.
+	 */
+	private function is_front_page_format_request(): bool {
+		if ( is_front_page() ) {
+			return true;
+		}
+
+		if ( ! is_home() || is_paged() || get_query_var( 'page' ) || get_query_var( 'page_id' ) || get_query_var( 'pagename' ) ) {
+			return false;
+		}
+
+		$request_uri  = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		$request_path = wp_parse_url( $request_uri, PHP_URL_PATH );
+		$home_path    = wp_parse_url( home_url( '/' ), PHP_URL_PATH );
+
+		return is_string( $request_path )
+			&& rtrim( $request_path, '/' ) === rtrim( (string) $home_path, '/' );
+	}
 
     /**
      * Handle markdown requests.
@@ -276,7 +313,9 @@ class RewriteHandler {
             return;
         }
 
-        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '';
+		// esc_url_raw() preserves percent-encoded octets so the trailing-slash
+		// redirect works for non-ASCII slugs (see parse_markdown_url()).
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 
         // Enforce lowercase .md extension — reject wrong case and let WordPress 404.
         if (
@@ -371,6 +410,18 @@ class RewriteHandler {
         if ($md_url === '') {
             return;
         }
+
+		// Prevent shared and WordPress page caches from storing this redirect.
+		// Caches that correctly honour Vary can opt out of both layers:
+		// Use the markdown_alternate_disable_page_cache_on_redirect filter to return false.
+		if ( apply_filters( 'markdown_alternate_disable_page_cache_on_redirect', true ) ) {
+			header( 'Cache-Control: private' );
+
+			if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+				define( 'DONOTCACHEPAGE', true );
+			}
+			do_action( 'litespeed_control_set_nocache', 'Content negotiation redirect' );
+		}
 
         // 303 See Other: redirect to markdown URL with Vary for cache correctness.
         header('Vary: Accept');

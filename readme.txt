@@ -107,14 +107,17 @@ Yes. When WooCommerce is active, products are automatically served at `.md` URLs
 
 Two filters let you extend any post's markdown output:
 
-* `markdown_alternate_frontmatter` — add YAML keys.
+* `markdown_alternate_frontmatter_content_lines` — add typed YAML fields (`string`, `url`, `date`, `number`, or `array` of items).
 * `markdown_alternate_content_sections` — add ordered body sections (lower `priority` runs first; the title is `0`, the post content is `100`).
 
 Example:
 
-`add_filter( 'markdown_alternate_frontmatter', function( $data, $post ) {
-    $data['cook_time'] = get_post_meta( $post->ID, '_cook_time', true );
-    return $data;
+`add_filter( 'markdown_alternate_frontmatter_content_lines', function( $lines, $post ) {
+    $lines['cook_time'] = [
+        'type'    => 'string',
+        'content' => get_post_meta( $post->ID, '_cook_time', true ),
+    ];
+    return $lines;
 }, 10, 2 );
 
 add_filter( 'markdown_alternate_content_sections', function( $sections, $post ) {
@@ -125,15 +128,16 @@ add_filter( 'markdown_alternate_content_sections', function( $sections, $post ) 
     return $sections;
 }, 10, 2 );`
 
-If your data lives outside `post_content` (e.g. postmeta), call `delete_transient( 'md_alt_cache_' . $post_id )` from your own update hooks so cached output stays fresh.
+If your data lives outside `post_content` (e.g. postmeta), call `delete_transient( 'md_alt_cache_' . $post_id )` from your own update hooks, or return a changing token from `markdown_alternate_cache_version`, so cached output stays fresh.
 
 == Changelog ==
 
-= 1.2.0 =
+= Unreleased =
 * Added WooCommerce integration: products are exposed at `.md` URLs with price, SKU, stock, attributes, and variations
-* Added the `markdown_alternate_frontmatter` filter so integrations can add YAML frontmatter keys
-* Added the `markdown_alternate_content_sections` filter so integrations can add ordered body sections
-* Added the `markdown_alternate_cache_version` filter for integration-driven cache invalidation
+* Added filters for frontmatter taxonomies, typed fields, and serialized YAML lines
+* Added ordered markdown body sections for integrations
+* Added cache version tokens for data outside post content
+* Preserved default post and page output, with standalone regression coverage
 
 = 1.1.0 =
 * Added transient caching with a 24 hour default and post-modified validation

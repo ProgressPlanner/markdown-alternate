@@ -25,7 +25,7 @@ class WooCommerce {
      */
     public function register(): void {
         add_filter( 'markdown_alternate_supported_post_types', [ $this, 'add_product_post_type' ] );
-        add_filter( 'markdown_alternate_frontmatter', [ $this, 'add_frontmatter' ], 10, 2 );
+        add_filter( 'markdown_alternate_frontmatter_content_lines', [ $this, 'add_frontmatter' ], 10, 2 );
         add_filter( 'markdown_alternate_content_sections', [ $this, 'add_sections' ], 10, 2 );
 
         // Invalidate cache when product data changes outside of post_modified.
@@ -51,65 +51,75 @@ class WooCommerce {
     }
 
     /**
-     * Add product fields to the YAML frontmatter.
+     * Add product fields to the typed YAML frontmatter.
      *
-     * @param array   $data Frontmatter data.
-     * @param WP_Post $post The post being rendered.
+     * Hooked to `markdown_alternate_frontmatter_content_lines`. Scalar fields are
+     * `[ 'type' => ..., 'content' => ... ]`; list fields are
+     * `[ 'type' => 'array', 'items' => [ [ key => scalar field, ... ], ... ] ]`.
+     *
+     * @param array   $lines Typed frontmatter fields keyed by YAML name.
+     * @param WP_Post $post  The post being rendered.
      * @return array
      */
-    public function add_frontmatter( $data, $post ): array {
-        if ( ! is_array( $data ) ) {
-            $data = [];
+    public function add_frontmatter( $lines, $post ): array {
+        if ( ! is_array( $lines ) ) {
+            $lines = [];
         }
         if ( ! ( $post instanceof WP_Post ) || $post->post_type !== 'product' ) {
-            return $data;
+            return $lines;
         }
 
         $product = $this->get_product( $post->ID );
         if ( ! $product ) {
-            return $data;
+            return $lines;
         }
+
+        $string = static function ( $value ): array {
+            return [ 'type' => 'string', 'content' => (string) $value ];
+        };
 
         $sku = $product->get_sku();
         if ( $sku !== '' ) {
-            $data['sku'] = $sku;
+            $lines['sku'] = $string( $sku );
         }
 
-        $data['product_type'] = $product->get_type();
-        $data['currency']     = function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : '';
+        $lines['product_type'] = $string( $product->get_type() );
+        if ( function_exists( 'get_woocommerce_currency' ) ) {
+            $lines['currency'] = $string( get_woocommerce_currency() );
+        }
 
         $price      = $product->get_price();
         $regular    = $product->get_regular_price();
         $sale_price = $product->get_sale_price();
         if ( $price !== '' && $price !== null ) {
-            $data['price'] = (string) $price;
+            $lines['price'] = $string( $price );
         }
         if ( $regular !== '' && $regular !== null ) {
-            $data['regular_price'] = (string) $regular;
+            $lines['regular_price'] = $string( $regular );
         }
         if ( $sale_price !== '' && $sale_price !== null ) {
-            $data['sale_price'] = (string) $sale_price;
+            $lines['sale_price'] = $string( $sale_price );
         }
 
-        $data['stock_status'] = $product->get_stock_status();
+        $lines['stock_status'] = $string( $product->get_stock_status() );
         if ( $product->managing_stock() ) {
             $stock_qty = $product->get_stock_quantity();
             if ( $stock_qty !== null ) {
-                $data['stock_quantity'] = (int) $stock_qty;
+                $lines['stock_quantity'] = [ 'type' => 'number', 'content' => (int) $stock_qty ];
             }
         }
 
         $product_categories = $this->collect_product_terms( $post->ID, 'product_cat' );
         if ( $product_categories ) {
-            $data['product_categories'] = $product_categories;
+            $lines['product_categories'] = [ 'type' => 'array', 'items' => $product_categories ];
         }
 
         $product_tags = $this->collect_product_terms( $post->ID, 'product_tag' );
         if ( $product_tags ) {
-            $data['product_tags'] = $product_tags;
+            $lines['product_tags'] = [ 'type' => 'array', 'items' => $product_tags ];
         }
 
-        return $data;
+        return $lines;
     }
 
     /**
@@ -338,8 +348,8 @@ class WooCommerce {
             $url  = get_term_link( $term );
             $path = is_wp_error( $url ) ? '' : rtrim( (string) wp_parse_url( $url, PHP_URL_PATH ), '/' ) . '.md';
             $out[] = [
-                'name' => $term->name,
-                'url'  => $path,
+                'name' => [ 'type' => 'string', 'content' => $term->name ],
+                'url'  => [ 'type' => 'url', 'content' => $path ],
             ];
         }
         return $out;

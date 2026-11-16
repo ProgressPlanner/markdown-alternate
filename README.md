@@ -142,6 +142,105 @@ add_filter( 'markdown_alternate_cache_expiration', function( $seconds ) {
 } );
 ```
 
+### Extend frontmatter
+
+The rendering filters receive the current `WP_Post` as their second argument.
+Return an array from each filter and register callbacks with two accepted arguments
+when you need the post. Normal post and page output stays unchanged without filters.
+
+| Filter | Value to return |
+| --- | --- |
+| `markdown_alternate_frontmatter_taxonomies` | A map of taxonomy names to frontmatter keys; defaults to `category => categories` and `post_tag => tags`. |
+| `markdown_alternate_frontmatter_content_lines` | Typed fields keyed by their frontmatter names, before serialization. |
+| `markdown_alternate_frontmatter_lines` | Serialized YAML lines, including the opening `---`, before the closing `---` is added. |
+
+Scalar fields use `type` and `content`. Use `string` or `url` for quoted values,
+`number` for unquoted numbers, and `date` for an unquoted date. Supply raw values:
+the renderer decodes HTML entities and escapes quoted values once. Empty strings
+and zero are retained; fields without a type or with null content are skipped.
+
+```php
+add_filter( 'markdown_alternate_frontmatter_content_lines', function( $fields, $post ) {
+    if ( 'recipe' === $post->post_type ) {
+        $fields['cook_time'] = array(
+            'type'    => 'number',
+            'content' => (int) get_post_meta( $post->ID, '_cook_time', true ),
+        );
+    }
+    return $fields;
+}, 10, 2 );
+```
+
+For a list of records such as categories, use `type => array` and `items` containing
+maps of typed scalar fields:
+
+```php
+$fields['specifications'] = array(
+    'type'  => 'array',
+    'items' => array(
+        array(
+            'name'  => array( 'type' => 'string', 'content' => 'Weight' ),
+            'value' => array( 'type' => 'string', 'content' => '2 kg' ),
+        ),
+    ),
+);
+```
+
+Use the taxonomy filter to replace or extend the default taxonomy mapping. The
+final `markdown_alternate_frontmatter_lines` filter is for custom YAML structures;
+its callbacks are responsible for valid YAML and must not add the closing delimiter.
+
+### Add or reorder body sections
+
+`markdown_alternate_content_sections` receives sections keyed by name. Each has
+`priority` and `markdown` fields. The defaults are `title` at priority `0` and
+`content` at `100`. Lower priorities render first; ties preserve insertion order,
+including on PHP 7.4. Use unique section keys, and unset a key to remove a section.
+Missing priorities default to `100`; empty or malformed entries are skipped when
+the list is changed. Markdown strings are joined with two newlines.
+
+```php
+add_filter( 'markdown_alternate_content_sections', function( $sections, $post ) {
+    $summary = get_post_meta( $post->ID, '_markdown_summary', true );
+    if ( '' !== $summary ) {
+        $sections['my_plugin_summary'] = array(
+            'priority' => 50,
+            'markdown' => "## Summary\n\n" . $summary,
+        );
+    }
+    return $sections;
+}, 10, 2 );
+```
+
+An unchanged section list retains the existing output exactly, including spacing
+for empty posts. Returning a non-array from a rendering filter falls back to its
+default value.
+
+### Invalidate integration data
+
+Frontmatter and section filters run only when the cached document is regenerated.
+If metadata, taxonomy terms, or another source changes without changing the post's
+modification timestamp, delete `md_alt_cache_{post_id}` from your update hook, or
+return a changing string from `markdown_alternate_cache_version`:
+
+```php
+add_filter( 'markdown_alternate_cache_version', function( $version, $post ) {
+    return $version . '|my_plugin:' . get_post_meta( $post->ID, '_my_plugin_revision', true );
+}, 10, 2 );
+```
+
+Append your token to the existing value so multiple integrations can participate.
+The token is stored with the cached document; it does not change the transient key.
+Old cache entries without a version token are regenerated once. Cache duration
+continues to use `markdown_alternate_cache_expiration`.
+
+### Run renderer regression tests
+
+Run `php tests/run.php` after installing dependencies. These standalone tests use
+WordPress API doubles and the real Markdown converter, and compare default output
+with fixtures captured from `main` at commit `7afba03`. CI runs them on PHP 7.4–8.3;
+they do not replace a full WordPress integration test.
+
 ## Content processing notes
 
 The plugin is built to produce cleaner Markdown than a naive HTML dump.
@@ -159,7 +258,7 @@ The plugin is built to produce cleaner Markdown than a naive HTML dump.
 
 ## Roadmap ideas
 
-Potential future improvements include broader post type support defaults, richer metadata output, and automated test coverage.
+Potential future improvements include broader post type support defaults, additional integration coverage.
 
 ## License
 
