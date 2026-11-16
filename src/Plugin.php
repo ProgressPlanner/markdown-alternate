@@ -80,9 +80,9 @@ class Plugin {
             ( new YoastLlmsTxt() )->register();
         }
 
-        if ( class_exists( 'WooCommerce' ) ) {
-            ( new WooCommerce() )->register();
-        }
+		if ( class_exists( 'WooCommerce' ) ) {
+			( new WooCommerce() )->register();
+		}
     }
 
     /**

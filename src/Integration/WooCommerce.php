@@ -9,6 +9,9 @@
  * @package MarkdownAlternate
  */
 
+// PSR-4 autoloading requires the file name to match the class name.
+// phpcs:disable WordPress.Files.FileName
+
 namespace MarkdownAlternate\Integration;
 
 use WP_Post;
@@ -18,392 +21,420 @@ use WP_Post;
  */
 class WooCommerce {
 
-    /**
-     * Register hooks.
-     *
-     * @return void
-     */
-    public function register(): void {
-        add_filter( 'markdown_alternate_supported_post_types', [ $this, 'add_product_post_type' ] );
-        add_filter( 'markdown_alternate_frontmatter_content_lines', [ $this, 'add_frontmatter' ], 10, 2 );
-        add_filter( 'markdown_alternate_content_sections', [ $this, 'add_sections' ], 10, 2 );
+	/**
+	 * Register hooks.
+	 *
+	 * @return void
+	 */
+	public function register(): void {
+		add_filter( 'markdown_alternate_supported_post_types', array( $this, 'add_product_post_type' ) );
+		add_filter( 'markdown_alternate_frontmatter_content_lines', array( $this, 'add_frontmatter' ), 10, 2 );
+		add_filter( 'markdown_alternate_content_sections', array( $this, 'add_sections' ), 10, 2 );
 
-        // Invalidate cache when product data changes outside of post_modified.
-        add_action( 'woocommerce_update_product', [ $this, 'invalidate_cache' ] );
-        add_action( 'woocommerce_product_set_stock', [ $this, 'invalidate_cache_from_product' ] );
-        add_action( 'woocommerce_variation_set_stock', [ $this, 'invalidate_cache_from_product' ] );
-    }
+		// Invalidate cache when product data changes outside of post_modified.
+		add_action( 'woocommerce_update_product', array( $this, 'invalidate_cache' ) );
+		add_action( 'woocommerce_product_set_stock', array( $this, 'invalidate_cache_from_product' ) );
+		add_action( 'woocommerce_variation_set_stock', array( $this, 'invalidate_cache_from_product' ) );
+	}
 
-    /**
-     * Add `product` to the list of supported post types.
-     *
-     * @param array $types Existing supported post types.
-     * @return array
-     */
-    public function add_product_post_type( $types ): array {
-        if ( ! is_array( $types ) ) {
-            $types = [];
-        }
-        if ( ! in_array( 'product', $types, true ) ) {
-            $types[] = 'product';
-        }
-        return $types;
-    }
+	/**
+	 * Add `product` to the list of supported post types.
+	 *
+	 * @param array $types Existing supported post types.
+	 * @return array
+	 */
+	public function add_product_post_type( $types ): array {
+		if ( ! is_array( $types ) ) {
+			$types = array();
+		}
+		if ( ! in_array( 'product', $types, true ) ) {
+			$types[] = 'product';
+		}
+		return $types;
+	}
 
-    /**
-     * Add product fields to the typed YAML frontmatter.
-     *
-     * Hooked to `markdown_alternate_frontmatter_content_lines`. Scalar fields are
-     * `[ 'type' => ..., 'content' => ... ]`; list fields are
-     * `[ 'type' => 'array', 'items' => [ [ key => scalar field, ... ], ... ] ]`.
-     *
-     * @param array   $lines Typed frontmatter fields keyed by YAML name.
-     * @param WP_Post $post  The post being rendered.
-     * @return array
-     */
-    public function add_frontmatter( $lines, $post ): array {
-        if ( ! is_array( $lines ) ) {
-            $lines = [];
-        }
-        if ( ! ( $post instanceof WP_Post ) || $post->post_type !== 'product' ) {
-            return $lines;
-        }
+	/**
+	 * Add product fields to the typed YAML frontmatter.
+	 *
+	 * Hooked to `markdown_alternate_frontmatter_content_lines`. Scalar fields are
+	 * `array( 'type' => ..., 'content' => ... )`; list fields are
+	 * `array( 'type' => 'array', 'items' => array( array( key => scalar field, ... ), ... ) )`.
+	 *
+	 * @param array   $lines Typed frontmatter fields keyed by YAML name.
+	 * @param WP_Post $post  The post being rendered.
+	 * @return array
+	 */
+	public function add_frontmatter( $lines, $post ): array {
+		if ( ! is_array( $lines ) ) {
+			$lines = array();
+		}
+		if ( ! ( $post instanceof WP_Post ) || 'product' !== $post->post_type ) {
+			return $lines;
+		}
 
-        $product = $this->get_product( $post->ID );
-        if ( ! $product ) {
-            return $lines;
-        }
+		$product = $this->get_product( $post->ID );
+		if ( ! $product ) {
+			return $lines;
+		}
 
-        $string = static function ( $value ): array {
-            return [ 'type' => 'string', 'content' => (string) $value ];
-        };
+		$string = static function ( $value ): array {
+			return array(
+				'type'    => 'string',
+				'content' => (string) $value,
+			);
+		};
 
-        $sku = $product->get_sku();
-        if ( $sku !== '' ) {
-            $lines['sku'] = $string( $sku );
-        }
+		$sku = $product->get_sku();
+		if ( '' !== $sku ) {
+			$lines['sku'] = $string( $sku );
+		}
 
-        $lines['product_type'] = $string( $product->get_type() );
-        if ( function_exists( 'get_woocommerce_currency' ) ) {
-            $lines['currency'] = $string( get_woocommerce_currency() );
-        }
+		$lines['product_type'] = $string( $product->get_type() );
+		if ( function_exists( 'get_woocommerce_currency' ) ) {
+			$lines['currency'] = $string( get_woocommerce_currency() );
+		}
 
-        $price      = $product->get_price();
-        $regular    = $product->get_regular_price();
-        $sale_price = $product->get_sale_price();
-        if ( $price !== '' && $price !== null ) {
-            $lines['price'] = $string( $price );
-        }
-        if ( $regular !== '' && $regular !== null ) {
-            $lines['regular_price'] = $string( $regular );
-        }
-        if ( $sale_price !== '' && $sale_price !== null ) {
-            $lines['sale_price'] = $string( $sale_price );
-        }
+		$price      = $product->get_price();
+		$regular    = $product->get_regular_price();
+		$sale_price = $product->get_sale_price();
+		if ( '' !== $price && null !== $price ) {
+			$lines['price'] = $string( $price );
+		}
+		if ( '' !== $regular && null !== $regular ) {
+			$lines['regular_price'] = $string( $regular );
+		}
+		if ( '' !== $sale_price && null !== $sale_price ) {
+			$lines['sale_price'] = $string( $sale_price );
+		}
 
-        $lines['stock_status'] = $string( $product->get_stock_status() );
-        if ( $product->managing_stock() ) {
-            $stock_qty = $product->get_stock_quantity();
-            if ( $stock_qty !== null ) {
-                $lines['stock_quantity'] = [ 'type' => 'number', 'content' => (int) $stock_qty ];
-            }
-        }
+		$lines['stock_status'] = $string( $product->get_stock_status() );
+		if ( $product->managing_stock() ) {
+			$stock_qty = $product->get_stock_quantity();
+			if ( null !== $stock_qty ) {
+				$lines['stock_quantity'] = array(
+					'type'    => 'number',
+					'content' => (int) $stock_qty,
+				);
+			}
+		}
 
-        $product_categories = $this->collect_product_terms( $post->ID, 'product_cat' );
-        if ( $product_categories ) {
-            $lines['product_categories'] = [ 'type' => 'array', 'items' => $product_categories ];
-        }
+		$product_categories = $this->collect_product_terms( $post->ID, 'product_cat' );
+		if ( $product_categories ) {
+			$lines['product_categories'] = array(
+				'type'  => 'array',
+				'items' => $product_categories,
+			);
+		}
 
-        $product_tags = $this->collect_product_terms( $post->ID, 'product_tag' );
-        if ( $product_tags ) {
-            $lines['product_tags'] = [ 'type' => 'array', 'items' => $product_tags ];
-        }
+		$product_tags = $this->collect_product_terms( $post->ID, 'product_tag' );
+		if ( $product_tags ) {
+			$lines['product_tags'] = array(
+				'type'  => 'array',
+				'items' => $product_tags,
+			);
+		}
 
-        return $lines;
-    }
+		return $lines;
+	}
 
-    /**
-     * Add product-specific body sections to the markdown output.
-     *
-     * @param array   $sections Existing sections.
-     * @param WP_Post $post     The post being rendered.
-     * @return array
-     */
-    public function add_sections( $sections, $post ): array {
-        if ( ! is_array( $sections ) ) {
-            $sections = [];
-        }
-        if ( ! ( $post instanceof WP_Post ) || $post->post_type !== 'product' ) {
-            return $sections;
-        }
+	/**
+	 * Add product-specific body sections to the markdown output.
+	 *
+	 * @param array   $sections Existing sections.
+	 * @param WP_Post $post     The post being rendered.
+	 * @return array
+	 */
+	public function add_sections( $sections, $post ): array {
+		if ( ! is_array( $sections ) ) {
+			$sections = array();
+		}
+		if ( ! ( $post instanceof WP_Post ) || 'product' !== $post->post_type ) {
+			return $sections;
+		}
 
-        $product = $this->get_product( $post->ID );
-        if ( ! $product ) {
-            return $sections;
-        }
+		$product = $this->get_product( $post->ID );
+		if ( ! $product ) {
+			return $sections;
+		}
 
-        $summary = $this->build_summary_section( $product );
-        if ( $summary !== '' ) {
-            $sections['woo_summary'] = [ 'priority' => 10, 'markdown' => $summary ];
-        }
+		$summary = $this->build_summary_section( $product );
+		if ( '' !== $summary ) {
+			$sections['woo_summary'] = array(
+				'priority' => 10,
+				'markdown' => $summary,
+			);
+		}
 
-        $short_description = trim( (string) $product->get_short_description() );
-        if ( $short_description !== '' ) {
-            $sections['woo_short_description'] = [
-                'priority' => 50,
-                'markdown' => "## Summary\n\n" . $this->html_to_text( $short_description ),
-            ];
-        }
+		$short_description = trim( (string) $product->get_short_description() );
+		if ( '' !== $short_description ) {
+			$sections['woo_short_description'] = array(
+				'priority' => 50,
+				'markdown' => "## Summary\n\n" . $this->html_to_text( $short_description ),
+			);
+		}
 
-        $attributes = $this->build_attributes_section( $product );
-        if ( $attributes !== '' ) {
-            $sections['woo_attributes'] = [ 'priority' => 150, 'markdown' => $attributes ];
-        }
+		$attributes = $this->build_attributes_section( $product );
+		if ( '' !== $attributes ) {
+			$sections['woo_attributes'] = array(
+				'priority' => 150,
+				'markdown' => $attributes,
+			);
+		}
 
-        $variations = $this->build_variations_section( $product );
-        if ( $variations !== '' ) {
-            $sections['woo_variations'] = [ 'priority' => 160, 'markdown' => $variations ];
-        }
+		$variations = $this->build_variations_section( $product );
+		if ( '' !== $variations ) {
+			$sections['woo_variations'] = array(
+				'priority' => 160,
+				'markdown' => $variations,
+			);
+		}
 
-        return $sections;
-    }
+		return $sections;
+	}
 
-    /**
-     * Build the at-a-glance summary block (price, stock, SKU).
-     *
-     * @param \WC_Product $product The product.
-     * @return string
-     */
-    private function build_summary_section( $product ): string {
-        $rows = [];
+	/**
+	 * Build the at-a-glance summary block (price, stock, SKU).
+	 *
+	 * @param \WC_Product $product The product.
+	 * @return string
+	 */
+	private function build_summary_section( $product ): string {
+		$rows = array();
 
-        $price_line = $this->format_price( $product );
-        if ( $price_line !== '' ) {
-            $rows[] = '**Price:** ' . $price_line;
-        }
+		$price_line = $this->format_price( $product );
+		if ( '' !== $price_line ) {
+			$rows[] = '**Price:** ' . $price_line;
+		}
 
-        $sku = $product->get_sku();
-        if ( $sku !== '' ) {
-            $rows[] = '**SKU:** ' . $sku;
-        }
+		$sku = $product->get_sku();
+		if ( '' !== $sku ) {
+			$rows[] = '**SKU:** ' . $sku;
+		}
 
-        $stock_status = $product->get_stock_status();
-        $stock_label  = [
-            'instock'     => 'In stock',
-            'outofstock'  => 'Out of stock',
-            'onbackorder' => 'On backorder',
-        ];
-        $rows[] = '**Availability:** ' . ( $stock_label[ $stock_status ] ?? $stock_status );
+		$stock_status = $product->get_stock_status();
+		$stock_label  = array(
+			'instock'     => 'In stock',
+			'outofstock'  => 'Out of stock',
+			'onbackorder' => 'On backorder',
+		);
 
-        if ( ! $rows ) {
-            return '';
-        }
+		$rows[] = '**Availability:** ' . ( $stock_label[ $stock_status ] ?? $stock_status );
 
-        return implode( "\n", $rows );
-    }
+		if ( ! $rows ) {
+			return '';
+		}
 
-    /**
-     * Format a product price as clean plain text.
-     *
-     * Avoids `get_price_html()` because it injects screen-reader spans
-     * ("Original price was:", "Current price is:") and NBSP entities that
-     * don't belong in markdown output.
-     *
-     * @param \WC_Product $product The product.
-     * @return string
-     */
-    private function format_price( $product ): string {
-        if ( ! function_exists( 'wc_price' ) ) {
-            return '';
-        }
+		return implode( "\n", $rows );
+	}
 
-        $regular = $product->get_regular_price();
-        $sale    = $product->get_sale_price();
-        $price   = $product->get_price();
+	/**
+	 * Format a product price as clean plain text.
+	 *
+	 * Avoids `get_price_html()` because it injects screen-reader spans
+	 * ("Original price was:", "Current price is:") and NBSP entities that
+	 * don't belong in markdown output.
+	 *
+	 * @param \WC_Product $product The product.
+	 * @return string
+	 */
+	private function format_price( $product ): string {
+		if ( ! function_exists( 'wc_price' ) ) {
+			return '';
+		}
 
-        $clean = function ( $html ) {
-            $text = wp_strip_all_tags( (string) $html );
-            $text = html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
-            // Normalize NBSP to a regular space.
-            $text = str_replace( "\xc2\xa0", ' ', $text );
-            return trim( $text );
-        };
+		$regular = $product->get_regular_price();
+		$sale    = $product->get_sale_price();
+		$price   = $product->get_price();
 
-        if ( $product->is_on_sale() && $sale !== '' && $sale !== null && $regular !== '' && $regular !== null ) {
-            return $clean( wc_price( wc_get_price_to_display( $product ) ) ) . ' (was ' . $clean( wc_price( wc_get_price_to_display( $product, [ 'price' => $regular ] ) ) ) . ')';
-        }
+		$clean = function ( $html ) {
+			$text = wp_strip_all_tags( (string) $html );
+			$text = html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+			// Normalize NBSP to a regular space.
+			$text = str_replace( "\xc2\xa0", ' ', $text );
+			return trim( $text );
+		};
 
-        if ( $price !== '' && $price !== null ) {
-            return $clean( wc_price( wc_get_price_to_display( $product ) ) );
-        }
+		if ( $product->is_on_sale() && '' !== $sale && null !== $sale && '' !== $regular && null !== $regular ) {
+			return $clean( wc_price( wc_get_price_to_display( $product ) ) ) . ' (was ' . $clean( wc_price( wc_get_price_to_display( $product, array( 'price' => $regular ) ) ) ) . ')';
+		}
 
-        return '';
-    }
+		if ( '' !== $price && null !== $price ) {
+			return $clean( wc_price( wc_get_price_to_display( $product ) ) );
+		}
 
-    /**
-     * Build the attributes section.
-     *
-     * @param \WC_Product $product The product.
-     * @return string
-     */
-    private function build_attributes_section( $product ): string {
-        $attributes = $product->get_attributes();
-        if ( ! $attributes ) {
-            return '';
-        }
+		return '';
+	}
 
-        $lines = [ '## Attributes', '' ];
-        $any   = false;
-        foreach ( $attributes as $attribute ) {
-            // Skip attributes hidden from product page.
-            if ( method_exists( $attribute, 'get_visible' ) && ! $attribute->get_visible() ) {
-                continue;
-            }
+	/**
+	 * Build the attributes section.
+	 *
+	 * @param \WC_Product $product The product.
+	 * @return string
+	 */
+	private function build_attributes_section( $product ): string {
+		$attributes = $product->get_attributes();
+		if ( ! $attributes ) {
+			return '';
+		}
 
-            $label  = wc_attribute_label( $attribute->get_name() );
-            $values = [];
+		$lines = array( '## Attributes', '' );
+		$any   = false;
+		foreach ( $attributes as $attribute ) {
+			// Skip attributes hidden from product page.
+			if ( method_exists( $attribute, 'get_visible' ) && ! $attribute->get_visible() ) {
+				continue;
+			}
 
-            if ( $attribute->is_taxonomy() ) {
-                $terms = wc_get_product_terms( $product->get_id(), $attribute->get_name(), [ 'fields' => 'names' ] );
-                if ( $terms ) {
-                    $values = $terms;
-                }
-            } else {
-                $values = $attribute->get_options();
-            }
+			$label  = wc_attribute_label( $attribute->get_name() );
+			$values = array();
 
-            if ( ! $values ) {
-                continue;
-            }
+			if ( $attribute->is_taxonomy() ) {
+				$terms = wc_get_product_terms( $product->get_id(), $attribute->get_name(), array( 'fields' => 'names' ) );
+				if ( $terms ) {
+					$values = $terms;
+				}
+			} else {
+				$values = $attribute->get_options();
+			}
 
-            $lines[] = '- **' . $label . ':** ' . implode( ', ', array_map( 'strval', $values ) );
-            $any     = true;
-        }
+			if ( ! $values ) {
+				continue;
+			}
 
-        return $any ? implode( "\n", $lines ) : '';
-    }
+			$lines[] = '- **' . $label . ':** ' . implode( ', ', array_map( 'strval', $values ) );
+			$any     = true;
+		}
 
-    /**
-     * Build the variations section for variable products.
-     *
-     * @param \WC_Product $product The product.
-     * @return string
-     */
-    private function build_variations_section( $product ): string {
-        if ( ! $product->is_type( 'variable' ) || ! method_exists( $product, 'get_available_variations' ) ) {
-            return '';
-        }
+		return $any ? implode( "\n", $lines ) : '';
+	}
 
-        $variations = $product->get_available_variations();
-        if ( ! $variations ) {
-            return '';
-        }
+	/**
+	 * Build the variations section for variable products.
+	 *
+	 * @param \WC_Product $product The product.
+	 * @return string
+	 */
+	private function build_variations_section( $product ): string {
+		if ( ! $product->is_type( 'variable' ) || ! method_exists( $product, 'get_available_variations' ) ) {
+			return '';
+		}
 
-        $lines = [ '## Variations', '' ];
-        foreach ( $variations as $variation ) {
-            $attrs = [];
-            if ( ! empty( $variation['attributes'] ) && is_array( $variation['attributes'] ) ) {
-                foreach ( $variation['attributes'] as $key => $value ) {
-                    if ( $value === '' ) {
-                        continue;
-                    }
-                    $clean_key = ucfirst( str_replace( [ 'attribute_pa_', 'attribute_' ], '', (string) $key ) );
-                    $attrs[]   = $clean_key . ': ' . $value;
-                }
-            }
-            $label  = $attrs ? implode( ', ', $attrs ) : ( '#' . ( $variation['variation_id'] ?? '' ) );
-            $price  = isset( $variation['display_price'] ) ? (string) $variation['display_price'] : '';
-            $sku    = $variation['sku'] ?? '';
-            $detail = [];
-            if ( $price !== '' ) {
-                $detail[] = 'price: ' . $price;
-            }
-            if ( $sku !== '' ) {
-                $detail[] = 'SKU: ' . $sku;
-            }
-            $lines[] = '- ' . $label . ( $detail ? ' — ' . implode( ', ', $detail ) : '' );
-        }
+		$variations = $product->get_available_variations();
+		if ( ! $variations ) {
+			return '';
+		}
 
-        return implode( "\n", $lines );
-    }
+		$lines = array( '## Variations', '' );
+		foreach ( $variations as $variation ) {
+			$attrs = array();
+			if ( ! empty( $variation['attributes'] ) && is_array( $variation['attributes'] ) ) {
+				foreach ( $variation['attributes'] as $key => $value ) {
+					if ( '' === $value ) {
+						continue;
+					}
+					$clean_key = ucfirst( str_replace( array( 'attribute_pa_', 'attribute_' ), '', (string) $key ) );
+					$attrs[]   = $clean_key . ': ' . $value;
+				}
+			}
+			$label  = $attrs ? implode( ', ', $attrs ) : ( '#' . ( $variation['variation_id'] ?? '' ) );
+			$price  = isset( $variation['display_price'] ) ? (string) $variation['display_price'] : '';
+			$sku    = $variation['sku'] ?? '';
+			$detail = array();
+			if ( '' !== $price ) {
+				$detail[] = 'price: ' . $price;
+			}
+			if ( '' !== $sku ) {
+				$detail[] = 'SKU: ' . $sku;
+			}
+			$lines[] = '- ' . $label . ( $detail ? ' — ' . implode( ', ', $detail ) : '' );
+		}
 
-    /**
-     * Collect product taxonomy terms (categories/tags) as name/url pairs.
-     *
-     * Mirrors the structure used by core categories/tags so the YAML serializer
-     * emits them the same way.
-     *
-     * @param int    $post_id  The product ID.
-     * @param string $taxonomy The taxonomy name.
-     * @return array
-     */
-    private function collect_product_terms( int $post_id, string $taxonomy ): array {
-        $terms = get_the_terms( $post_id, $taxonomy );
-        if ( ! $terms || is_wp_error( $terms ) ) {
-            return [];
-        }
+		return implode( "\n", $lines );
+	}
 
-        $out = [];
-        foreach ( $terms as $term ) {
-            $url  = get_term_link( $term );
-            $path = is_wp_error( $url ) ? '' : rtrim( (string) wp_parse_url( $url, PHP_URL_PATH ), '/' ) . '.md';
-            $out[] = [
-                'name' => [ 'type' => 'string', 'content' => $term->name ],
-                'url'  => [ 'type' => 'url', 'content' => $path ],
-            ];
-        }
-        return $out;
-    }
+	/**
+	 * Collect product taxonomy terms (categories/tags) as typed name/url pairs.
+	 *
+	 * Mirrors the structure used by core categories/tags so the YAML serializer
+	 * emits them the same way.
+	 *
+	 * @param int    $post_id  The product ID.
+	 * @param string $taxonomy The taxonomy name.
+	 * @return array
+	 */
+	private function collect_product_terms( int $post_id, string $taxonomy ): array {
+		$terms = get_the_terms( $post_id, $taxonomy );
+		if ( ! $terms || is_wp_error( $terms ) ) {
+			return array();
+		}
 
-    /**
-     * Resolve a `WC_Product` instance for a post id.
-     *
-     * @param int $post_id The product ID.
-     * @return \WC_Product|null
-     */
-    private function get_product( int $post_id ) {
-        if ( ! function_exists( 'wc_get_product' ) ) {
-            return null;
-        }
-        $product = wc_get_product( $post_id );
-        return $product ? $product : null;
-    }
+		$out = array();
+		foreach ( $terms as $term ) {
+			$url   = get_term_link( $term );
+			$path  = is_wp_error( $url ) ? '' : rtrim( (string) wp_parse_url( $url, PHP_URL_PATH ), '/' ) . '.md';
+			$out[] = array(
+				'name' => array(
+					'type'    => 'string',
+					'content' => $term->name,
+				),
+				'url'  => array(
+					'type'    => 'url',
+					'content' => $path,
+				),
+			);
+		}
+		return $out;
+	}
 
-    /**
-     * Convert a small chunk of HTML to plain text suitable for embedding in markdown.
-     *
-     * @param string $html The HTML.
-     * @return string
-     */
-    private function html_to_text( string $html ): string {
-        $text = wp_strip_all_tags( $html );
-        $text = html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
-        return trim( $text );
-    }
+	/**
+	 * Resolve a `WC_Product` instance for a post id.
+	 *
+	 * @param int $post_id The product ID.
+	 * @return \WC_Product|null
+	 */
+	private function get_product( int $post_id ) {
+		if ( ! function_exists( 'wc_get_product' ) ) {
+			return null;
+		}
+		$product = wc_get_product( $post_id );
+		return $product ? $product : null;
+	}
 
-    /**
-     * Invalidate the cached markdown for a product.
-     *
-     * @param int $product_id The product ID.
-     * @return void
-     */
-    public function invalidate_cache( $product_id ): void {
-        $product_id = (int) $product_id;
-        if ( $product_id > 0 ) {
-            delete_transient( 'md_alt_cache_' . $product_id );
-        }
-    }
+	/**
+	 * Convert a small chunk of HTML to plain text suitable for embedding in markdown.
+	 *
+	 * @param string $html The HTML.
+	 * @return string
+	 */
+	private function html_to_text( string $html ): string {
+		$text = wp_strip_all_tags( $html );
+		$text = html_entity_decode( $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		return trim( $text );
+	}
 
-    /**
-     * Invalidate cache when given a product object (variation stock hooks pass the product).
-     *
-     * @param \WC_Product $product The product.
-     * @return void
-     */
-    public function invalidate_cache_from_product( $product ): void {
-        if ( is_object( $product ) && method_exists( $product, 'get_id' ) ) {
-            $parent_id = method_exists( $product, 'get_parent_id' ) ? (int) $product->get_parent_id() : 0;
-            $this->invalidate_cache( $parent_id ?: (int) $product->get_id() );
-        }
-    }
+	/**
+	 * Invalidate the cached markdown for a product.
+	 *
+	 * @param int $product_id The product ID.
+	 * @return void
+	 */
+	public function invalidate_cache( $product_id ): void {
+		$product_id = (int) $product_id;
+		if ( $product_id > 0 ) {
+			delete_transient( 'md_alt_cache_' . $product_id );
+		}
+	}
+
+	/**
+	 * Invalidate cache when given a product object (variation stock hooks pass the product).
+	 *
+	 * @param \WC_Product $product The product.
+	 * @return void
+	 */
+	public function invalidate_cache_from_product( $product ): void {
+		if ( is_object( $product ) && method_exists( $product, 'get_id' ) ) {
+			$parent_id = method_exists( $product, 'get_parent_id' ) ? (int) $product->get_parent_id() : 0;
+			$this->invalidate_cache( $parent_id > 0 ? $parent_id : (int) $product->get_id() );
+		}
+	}
 }
