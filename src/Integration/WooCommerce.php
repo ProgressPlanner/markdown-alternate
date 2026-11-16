@@ -16,6 +16,13 @@ use WP_Post;
 class WooCommerce {
 
 	/**
+	 * Converter reused across price, description and variation conversions.
+	 *
+	 * @var MarkdownConverter|null
+	 */
+	private $converter;
+
+	/**
 	 * Register hooks when WooCommerce is active.
 	 *
 	 * @return void
@@ -139,13 +146,9 @@ class WooCommerce {
 			$rows[] = '**' . __( 'Price:', 'markdown-alternate' ) . '** ' . $price;
 		}
 		if ( '' !== $product->get_sku() ) {
-			$rows[] = '**' . __( 'SKU:', 'markdown-alternate' ) . '** ' . $this->plain_markdown( $product->get_sku() );
+			$rows[] = '**' . __( 'SKU:', 'markdown-alternate' ) . '** ' . $this->code_span( $product->get_sku() );
 		}
-		$stock_labels            = array(
-			'instock'     => __( 'In stock', 'markdown-alternate' ),
-			'outofstock'  => __( 'Out of stock', 'markdown-alternate' ),
-			'onbackorder' => __( 'On backorder', 'markdown-alternate' ),
-		);
+		$stock_labels            = wc_get_product_stock_status_options();
 		$status                  = $product->get_stock_status();
 		$rows[]                  = '**' . __( 'Availability:', 'markdown-alternate' ) . '** ' . $this->plain_markdown( $stock_labels[ $status ] ?? $status );
 		$sections['woo_summary'] = array(
@@ -229,7 +232,7 @@ class WooCommerce {
 				$details[] = $price;
 			}
 			if ( '' !== $variation->get_sku() ) {
-				$details[] = __( 'SKU:', 'markdown-alternate' ) . ' ' . $this->plain_markdown( $variation->get_sku() );
+				$details[] = __( 'SKU:', 'markdown-alternate' ) . ' ' . $this->code_span( $variation->get_sku() );
 			}
 			$rows[] = '- ' . $this->plain_markdown( $label ) . ( $details ? ': ' . implode( ', ', $details ) : '' );
 		}
@@ -257,7 +260,7 @@ class WooCommerce {
 	 * @return string Display price in Markdown.
 	 */
 	private function format_price( $product ): string {
-		$html = $product->get_price_html();
+		$html = trim( (string) $product->get_price_html() );
 		if ( '' === $html ) {
 			return '';
 		}
@@ -272,7 +275,8 @@ class WooCommerce {
 			foreach ( $xpath->query( '//del' ) as $node ) {
 				$node->parentNode->replaceChild( $document->createTextNode( '~~' . $node->textContent . '~~ ' ), $node ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Native DOM API.
 			}
-			$html = $document->saveHTML( $document->getElementsByTagName( 'body' )->item( 0 ) );
+			$body = $document->getElementsByTagName( 'body' )->item( 0 );
+			$html = $body ? $document->saveHTML( $body ) : '';
 		} finally {
 			libxml_clear_errors();
 			libxml_use_internal_errors( $previous );
@@ -288,21 +292,54 @@ class WooCommerce {
 	 */
 	private function to_markdown( $html ): string {
 		try {
-			return ( new MarkdownConverter() )->convert( (string) $html );
+			if ( null === $this->converter ) {
+				$this->converter = new MarkdownConverter();
+			}
+			return $this->converter->convert( (string) $html );
 		} catch ( \Throwable $error ) {
 			return $this->plain_markdown( $html );
 		}
 	}
 
 	/**
+	 * Flatten a plain value to one line of text.
+	 *
+	 * @param string $value Plain text or HTML.
+	 * @return string Decoded single-line text.
+	 */
+	private function plain_text( $value ): string {
+		$value = html_entity_decode( wp_strip_all_tags( (string) $value ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		return trim( preg_replace( '/\s+/u', ' ', $value ) );
+	}
+
+	/**
 	 * Escape a plain value so product text cannot create Markdown structure.
+	 *
+	 * Only characters that act inline are escaped everywhere, plus a leading
+	 * block marker (">", or "#", "+", "-", "1.", "1)" followed by a space),
+	 * because variation labels start a list item. Values such as
+	 * "1.5 kg (approx.)" therefore stay readable.
 	 *
 	 * @param string $value Plain text or a formatted variation label.
 	 * @return string Escaped single-line Markdown.
 	 */
 	private function plain_markdown( $value ): string {
-		$value = html_entity_decode( wp_strip_all_tags( (string) $value ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
-		$value = preg_replace( '/\s+/u', ' ', $value );
-		return trim( preg_replace( '/([\\\\`*_{}\[\]()<>#+.!|~\-])/u', '\\\\$1', $value ) );
+		$value = preg_replace( '/([\\\\`*_\[\]<>~])/u', '\\\\$1', $this->plain_text( $value ) );
+		$value = preg_replace( '/^(>|[#+\-](?=\s|$))/u', '\\\\$1', $value );
+		return preg_replace( '/^(\d+)([.)])(?=\s|$)/u', '$1\\\\$2', $value );
+	}
+
+	/**
+	 * Wrap an identifier such as a SKU in a code span so it is copied verbatim.
+	 *
+	 * @param string $value Identifier.
+	 * @return string Markdown code span.
+	 */
+	private function code_span( $value ): string {
+		$value = $this->plain_text( $value );
+		preg_match_all( '/`+/', $value, $runs );
+		$fence = str_repeat( '`', $runs[0] ? max( array_map( 'strlen', $runs[0] ) ) + 1 : 1 );
+		$pad   = ( '`' === substr( $value, 0, 1 ) || '`' === substr( $value, -1 ) ) ? ' ' : '';
+		return $fence . $pad . $value . $pad . $fence;
 	}
 }
