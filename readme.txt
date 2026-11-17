@@ -104,6 +104,10 @@ Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__ret
 
 == Changelog ==
 
+= Unreleased =
+* Added product URL, modified date, GTIN, sale end date and ratings to WooCommerce product frontmatter
+* Removed the post author from WooCommerce product frontmatter
+
 = 1.2.0 =
 * Added WooCommerce product metadata, formatted prices, short descriptions, visible attributes, and variations
 * Bypassed shared and HTTP caching for customer-dependent product output

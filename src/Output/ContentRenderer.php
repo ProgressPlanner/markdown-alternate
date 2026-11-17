@@ -275,8 +275,9 @@ class ContentRenderer {
 		/**
 		 * Filters typed frontmatter fields before YAML serialization.
 		 *
-		 * Scalar fields contain type and content. Array fields contain type
-		 * 'array' and items, a list of maps whose values are scalar fields.
+		 * Scalar fields contain type (string, url, date, number or boolean) and
+		 * content. Array fields contain type 'array' and items, a list of maps
+		 * whose values are scalar fields.
 		 * Pass unescaped values; strings and URLs are escaped once below.
 		 *
 		 * @since 1.2.0
@@ -348,8 +349,8 @@ class ContentRenderer {
 	/**
 	 * Format a value for YAML output based on its type.
 	 *
-	 * @param string $value The value to format.
-	 * @param string $type The type of the value (e.g. 'string', 'date', 'url', 'number', 'boolean').
+	 * @param string|bool $value The value to format.
+	 * @param string      $type The type of the value (e.g. 'string', 'date', 'url', 'number', 'boolean').
 	 * @return string The formatted value for YAML.
 	 */
 	private function format_yaml_value( $value, $type ) {
