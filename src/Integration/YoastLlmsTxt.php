@@ -27,6 +27,13 @@ class YoastLlmsTxt {
      */
     private bool $generating = false;
 
+	/**
+	 * Whether a noindex lookup is resolving Yoast metadata and permalinks.
+	 *
+	 * @var bool
+	 */
+	private bool $checking_noindex = false;
+
     /**
      * Register hooks to wrap Yoast's llms.txt generation.
      *
@@ -98,6 +105,10 @@ class YoastLlmsTxt {
             return $canonical;
         }
 
+		if ( $this->should_keep_html_url( $presentation->model->object_id ) ) {
+			return $canonical;
+		}
+
         return rtrim( $canonical, '/' ) . '.md';
     }
 
@@ -117,6 +128,36 @@ class YoastLlmsTxt {
             return $url;
         }
 
+		if ( $this->should_keep_html_url( $post ) ) {
+			return $url;
+		}
+
         return rtrim( $url, '/' ) . '.md';
     }
+
+	/**
+	 * Keep HTML links for skipped posts, including during nested Yoast lookups.
+	 *
+	 * Building Yoast metadata can itself request a permalink or canonical URL.
+	 * Leave those nested URLs untouched so the lookup cannot recurse or cache
+	 * a Markdown URL inside the presentation used to decide eligibility.
+	 *
+	 * @param \WP_Post|int $post Post object or ID.
+	 * @return bool Whether to retain the original HTML URL.
+	 */
+	private function should_keep_html_url( $post ): bool {
+		if ( $this->checking_noindex ) {
+			return true;
+		}
+		$post = get_post( $post );
+		if ( ! $post instanceof \WP_Post ) {
+			return true;
+		}
+		$this->checking_noindex = true;
+		try {
+			return PostTypeSupport::should_skip_noindexed( $post );
+		} finally {
+			$this->checking_noindex = false;
+		}
+	}
 }

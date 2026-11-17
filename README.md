@@ -167,6 +167,16 @@ add_filter( 'markdown_alternate_cache_expiration', function( $seconds ) {
 } );
 ```
 
+### Skip posts marked noindex
+
+By default a post keeps its markdown copy even when an SEO plugin marks it noindex. To withhold the `.md` URL, the `?format=markdown` fallback, the Accept redirect and the alternate link for posts that Yoast SEO marks noindex, opt in with `markdown_alternate_skip_noindexed`:
+
+```php
+add_filter( 'markdown_alternate_skip_noindexed', '__return_true' );
+```
+
+The filter receives the post as its second argument. The check reads Yoast's effective robots value, including an empty robots array or filters that remove noindex; stale per-post metadata does not override that value. Without Yoast active, nothing is skipped. During Yoast llms.txt generation, skipped posts keep their HTML URLs instead of links to unavailable Markdown copies. Regenerate llms.txt after enabling the filter to update an existing file. Markdown responses retain their canonical Link header; this opt-in does not add a blanket noindex header.
+
 ### Extend frontmatter
 
 The rendering filters receive the current `WP_Post` as their second argument.

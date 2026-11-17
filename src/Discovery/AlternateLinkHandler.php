@@ -57,6 +57,11 @@ class AlternateLinkHandler {
             return;
         }
 
+		// A noindexed post the site opted out of markdown has no .md URL to advertise.
+		if ( PostTypeSupport::should_skip_noindexed( $post ) ) {
+			return;
+		}
+
         $md_url = UrlConverter::convert_to_markdown_url( get_permalink( $post ) );
 
         printf(

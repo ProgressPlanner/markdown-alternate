@@ -37,4 +37,66 @@ class PostTypeSupport {
     public static function is_supported( string $post_type ): bool {
         return in_array( $post_type, self::get_supported_types(), true );
     }
+
+	/**
+	 * Check whether the markdown alternate should be withheld for a noindexed post.
+	 *
+	 * Off by default: a noindexed post keeps its markdown copy, because SEO
+	 * settings are independent of markdown output. A site that wants posts it
+	 * keeps out of search to stay off agent channels too (no .md URL, no
+	 * ?format=markdown, no Accept redirect, no alternate link) opts in with
+	 * the 'markdown_alternate_skip_noindexed' filter. The filter runs first,
+	 * so the noindex lookup only happens on sites that opted in.
+	 *
+	 * @param \WP_Post $post The post to check.
+	 * @return bool True if the post is noindexed and the site opted in.
+	 */
+	public static function should_skip_noindexed( \WP_Post $post ): bool {
+		/**
+		 * Filters whether posts marked noindex lose their markdown alternate.
+		 *
+		 * @param bool     $skip Whether to skip noindexed posts. Default false.
+		 * @param \WP_Post $post The post being checked.
+		 */
+		if ( ! apply_filters( 'markdown_alternate_skip_noindexed', false, $post ) ) {
+			return false;
+		}
+
+		return self::is_noindexed( $post );
+	}
+
+	/**
+	 * Check whether Yoast SEO marks a post noindex.
+	 *
+	 * Prefers Yoast's effective robots value, which folds in the per-post
+	 * setting, the post type default and the wpseo_robots filters, so the
+	 * answer matches the robots meta on the HTML page. Falls back to the
+	 * per-post meta key when the surface finds no indexable or throws; that
+	 * fallback does not see the post type default. Without Yoast active the
+	 * answer is false, even if a former install left its meta key behind.
+	 *
+	 * @param \WP_Post $post The post to check.
+	 * @return bool True if Yoast marks the post noindex.
+	 */
+	public static function is_noindexed( \WP_Post $post ): bool {
+		if ( ! function_exists( 'YoastSEO' ) ) {
+			return false;
+		}
+
+		try {
+			$meta = YoastSEO()->meta->for_post( $post->ID );
+			if ( $meta ) {
+				$robots = $meta->robots;
+				if ( is_array( $robots ) ) {
+					// An empty or filtered array is authoritative too: do not revive stale meta.
+					return in_array( 'noindex', $robots, true );
+				}
+			}
+		} catch ( \Throwable $e ) {
+			// PHP 7.4 requires the catch variable; fall back to the meta key below.
+			unset( $e );
+		}
+
+		return '1' === get_post_meta( $post->ID, '_yoast_wpseo_meta-robots-noindex', true );
+	}
 }
