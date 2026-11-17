@@ -4,7 +4,7 @@ Tags: markdown, llm, ai, content, api
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -104,7 +104,7 @@ Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__ret
 
 == Changelog ==
 
-= Unreleased =
+= 1.2.0 =
 * Added WooCommerce product metadata, formatted prices, short descriptions, visible attributes, and variations
 * Bypassed shared and HTTP caching for customer-dependent product output
 * Added real WooCommerce integration and HTTP regression tests
@@ -113,6 +113,11 @@ Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__ret
 * Added cache version tokens for data outside post content
 * Preserved default post and page output, with standalone regression coverage
 * Added the `markdown_alternate_skip_noindexed` filter to withhold markdown for posts Yoast SEO marks noindex
+* Preserved HTML links in newly generated Yoast llms.txt files for posts excluded from Markdown
+* Preserved Markdown table structure and non-ASCII characters in Markdown URLs
+* Fixed static front page requests using `?format=markdown`
+* Prevented shared caches from storing Accept-header redirects
+* Fixed repeated escaping of frontmatter values
 
 = 1.1.0 =
 * Added transient caching with a 24 hour default and post-modified validation
