@@ -100,7 +100,7 @@ Yes. When Yoast SEO is active and generating `llms.txt`, Markdown Alternate can 
 
 = Can posts marked noindex skip the Markdown version? =
 
-Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__return_true' );`, posts that Yoast SEO marks noindex get no `.md` URL, no query parameter fallback, no Accept redirect and no alternate link. By default they keep their Markdown version.
+Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__return_true' );`, posts that Yoast SEO marks noindex get no `.md` URL, no query parameter fallback, no Accept redirect and no alternate link. Their links in newly generated Yoast llms.txt files keep the HTML URL. Regenerate llms.txt after enabling the filter. By default posts keep their Markdown version.
 
 == Changelog ==
 
@@ -113,7 +113,6 @@ Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__ret
 * Added cache version tokens for data outside post content
 * Preserved default post and page output, with standalone regression coverage
 * Added the `markdown_alternate_skip_noindexed` filter to withhold markdown for posts Yoast SEO marks noindex
-* Markdown responses now send `X-Robots-Tag: noindex`, so the HTML page stays the only indexable copy
 
 = 1.1.0 =
 * Added transient caching with a 24 hour default and post-modified validation

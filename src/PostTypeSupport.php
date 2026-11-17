@@ -87,8 +87,9 @@ class PostTypeSupport {
 			$meta = YoastSEO()->meta->for_post( $post->ID );
 			if ( $meta ) {
 				$robots = $meta->robots;
-				if ( is_array( $robots ) && isset( $robots['index'] ) ) {
-					return 'noindex' === $robots['index'];
+				if ( is_array( $robots ) ) {
+					// An empty or filtered array is authoritative too: do not revive stale meta.
+					return in_array( 'noindex', $robots, true );
 				}
 			}
 		} catch ( \Throwable $e ) {

@@ -33,16 +33,27 @@ define( 'DAY_IN_SECONDS', 86400 );
 
 function md_alt_test_reset() {
 	$GLOBALS['md_alt_test_state'] = array(
-		'filters'    => array(),
-		'cache'      => array(),
-		'expiration' => array(),
-		'terms'      => array(),
-		'author'     => 'Author Name',
-		'image'      => false,
-		'renders'    => 0,
-		'meta'       => array(),
-		'yoast'      => null,
+		'filters'     => array(),
+		'cache'       => array(),
+		'expiration'  => array(),
+		'terms'       => array(),
+		'author'      => 'Author Name',
+		'image'       => false,
+		'renders'     => 0,
+		'meta'        => array(),
+		'yoast'       => null,
+		'posts'       => array(),
+		'yoast_calls' => 0,
 	);
+}
+
+function get_post( $post ) {
+	return $post instanceof WP_Post ? $post : ( $GLOBALS['md_alt_test_state']['posts'][ $post ] ?? null );
+}
+
+function get_post_type( $post ) {
+	$post = get_post( $post );
+	return $post ? $post->post_type : false;
 }
 
 function get_post_meta( $post_id, $key, $single = false ) {
@@ -59,6 +70,10 @@ function YoastSEO() {
 	return (object) array(
 		'meta' => new class() {
 			public function for_post( $post_id ) {
+				++$GLOBALS['md_alt_test_state']['yoast_calls'];
+				if ( isset( $GLOBALS['md_alt_test_state']['yoast_callback'] ) ) {
+					call_user_func( $GLOBALS['md_alt_test_state']['yoast_callback'], $post_id );
+				}
 				$yoast = $GLOBALS['md_alt_test_state']['yoast'];
 				if ( 'throw' === $yoast ) {
 					throw new RuntimeException( 'Indexable unavailable.' );
