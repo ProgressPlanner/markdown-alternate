@@ -18,7 +18,7 @@ if (!defined('ABSPATH')) {
 }
 
 define('MARKDOWN_ALTERNATE_FILE', __FILE__);
-define('MARKDOWN_ALTERNATE_VERSION', '1.2.0');
+define( 'MARKDOWN_ALTERNATE_VERSION', '1.2.0' );
 
 require_once __DIR__ . '/vendor/autoload.php';
 
