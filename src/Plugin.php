@@ -9,6 +9,7 @@ namespace MarkdownAlternate;
 
 use MarkdownAlternate\Discovery\AlternateLinkHandler;
 use MarkdownAlternate\Integration\YoastLlmsTxt;
+use MarkdownAlternate\Integration\WooCommerce;
 use MarkdownAlternate\Router\RewriteHandler;
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
@@ -75,6 +76,9 @@ class Plugin {
      * @return void
      */
     public function register_integrations(): void {
+		if ( class_exists( 'WooCommerce' ) ) {
+			( new WooCommerce() )->register();
+		}
         if ( defined( 'WPSEO_VERSION' ) ) {
             ( new YoastLlmsTxt() )->register();
         }

@@ -82,6 +82,14 @@ $md_alt_tests['Typed metadata and taxonomy hooks remain compatible with product 
 				'type'    => 'number',
 				'content' => 0,
 			);
+			$fields['taxed']    = array(
+				'type'    => 'boolean',
+				'content' => true,
+			);
+			$fields['exempt']   = array(
+				'type'    => 'boolean',
+				'content' => false,
+			);
 			$fields['specs']    = array(
 				'type'  => 'array',
 				'items' => array(
@@ -115,7 +123,7 @@ $md_alt_tests['Typed metadata and taxonomy hooks remain compatible with product 
 		2
 	);
 	$output = ( new ContentRenderer() )->render( $post );
-	foreach ( array( 'price: 12.50', 'currency: "EUR"', 'stock: 0', 'categories:', 'brands:', 'url: "/product-category/books.md"', 'value: 0', "custom_flag: true\n---" ) as $fragment ) {
+	foreach ( array( 'price: 12.50', 'currency: "EUR"', 'stock: 0', "taxed: true\n", "exempt: false\n", 'categories:', 'brands:', 'url: "/product-category/books.md"', 'value: 0', "custom_flag: true\n---" ) as $fragment ) {
 		md_alt_assert_contains( $fragment, $output );
 	}
 	md_alt_assert_contains( 'name: "A \\"quote\\" and \\\\ slash"', $output );
@@ -329,6 +337,34 @@ $md_alt_tests['Opting in never skips an indexed post and receives the post'] = s
 		2
 	);
 	md_alt_assert_same( false, PostTypeSupport::should_skip_noindexed( $post ), 'indexed' );
+};
+
+$md_alt_tests['Disabling cache ignores existing entries and never stores customer output'] = static function () {
+	$post     = md_alt_test_fixture( 'ordinary' );
+	$renderer = new ContentRenderer();
+	$renderer->render( $post );
+	$original_cache = get_transient( 'md_alt_cache_17' );
+	add_filter(
+		'markdown_alternate_cache_enabled',
+		static function () {
+			return false;
+		}
+	);
+	$post->post_content = '<p>Customer price one</p>';
+	md_alt_assert_contains( 'Customer price one', $renderer->render( $post ) );
+	$post->post_content = '<p>Customer price two</p>';
+	md_alt_assert_contains( 'Customer price two', $renderer->render( $post ) );
+	md_alt_assert_same( $original_cache, get_transient( 'md_alt_cache_17' ) );
+	delete_transient( 'md_alt_cache_17' );
+	$renderer->render( $post );
+	md_alt_assert_same( false, get_transient( 'md_alt_cache_17' ) );
+};
+
+$md_alt_tests['Integration registration leaves hooks unchanged without WooCommerce'] = static function () {
+	md_alt_test_fixture( 'ordinary' );
+	$plugin = ( new ReflectionClass( \MarkdownAlternate\Plugin::class ) )->newInstanceWithoutConstructor();
+	$plugin->register_integrations();
+	md_alt_assert_same( array(), $GLOBALS['md_alt_test_state']['filters'] );
 };
 
 $md_alt_failures = 0;
