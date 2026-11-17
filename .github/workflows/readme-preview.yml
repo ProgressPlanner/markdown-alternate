@@ -1,0 +1,29 @@
+name: Plugin readme preview
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "**/readme.txt"
+      - "**/README.txt"
+      - "**/readme.md"
+      - "**/README.md"
+      - "**/*.php"
+      - "**/.wordpress-org/**"
+      - "**/assets/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: readme-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    steps:
+      # No checkout or execution of pull-request code. The action reads files as data.
+      - uses: jdevalk/plugin-page-preview@3b44ebfe0eeecfcd46a1cce923b12fd5182c4320 # v1
