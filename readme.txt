@@ -101,6 +101,9 @@ Yes. When Yoast SEO is active and generating `llms.txt`, Markdown Alternate can 
 == Changelog ==
 
 = Unreleased =
+* Added WooCommerce product metadata, formatted prices, short descriptions, visible attributes, and variations
+* Bypassed shared and HTTP caching for customer-dependent product output
+* Added real WooCommerce integration and HTTP regression tests
 * Added filters for frontmatter taxonomies, typed fields, and serialized YAML lines
 * Added ordered markdown body sections for integrations
 * Added cache version tokens for data outside post content
