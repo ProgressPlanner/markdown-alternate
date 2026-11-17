@@ -49,9 +49,7 @@ After activation, supported content can be requested in multiple ways:
 3. Go to 'Settings > Permalinks' and make sure your permalink structure is not set to 'Plain'.
 4. Open any published post or page URL with `.md` appended.
 
-Example:
-
-`https://example.com/hello-world.md`
+For example, the Markdown version of `https://example.com/hello-world/` is `https://example.com/hello-world.md` (remove the trailing slash before adding `.md`).
 
 == Frequently Asked Questions ==
 
