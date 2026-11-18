@@ -1,0 +1,48 @@
+name: Run PHPStan
+
+on:
+  # Run on pushes to main and on all pull requests.
+  push:
+    branches:
+      - main
+  pull_request:
+  # Allow manually triggering the workflow.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phpstan:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: 'latest'
+          coverage: none
+          tools: composer
+
+      # vendor/ is committed and is what installed sites receive. It must only
+      # ever hold production packages, so check it before Composer adds the
+      # development tools to this runner's copy.
+      - name: Check committed vendor has no dev packages
+        run: php .github/scripts/check-vendor.php
+
+      - name: Install PHP dependencies
+        uses: ramsey/composer-install@a8d0d959dab41457692a5e2041bd9b757a119e3f # 3.2.1
+        with:
+          composer-options: '--prefer-dist --no-scripts'
+
+      - name: PHPStan
+        run: composer phpstan

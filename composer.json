@@ -15,6 +15,19 @@
     },
     "config": {
         "optimize-autoloader": true,
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "phpstan/extension-installer": true
+        }
+    },
+    "require-dev": {
+        "phpstan/extension-installer": "^1.4",
+        "phpstan/phpstan": "^2.1",
+        "szepeviktor/phpstan-wordpress": "^2.0"
+    },
+    "scripts": {
+        "phpstan": [
+            "@php ./vendor/bin/phpstan analyse --memory-limit=2048M"
+        ]
     }
 }
