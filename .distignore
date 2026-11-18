@@ -1,0 +1,18 @@
+# Files left out of the release ZIP built by .github/workflows/release.yml.
+# Patterns start with a slash so they only match at the plugin root and leave
+# vendor/ exactly as committed. This list does not affect GitHub's own source
+# archives of a tag.
+.DS_Store
+/.claude
+/.distignore
+/.env
+/.env.example
+/.git
+/.github
+/.gitignore
+/.planning
+/bin
+/logs
+/phpstan-baseline.neon
+/phpstan.neon.dist
+/tests
