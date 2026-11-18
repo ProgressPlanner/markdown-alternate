@@ -1,0 +1,121 @@
+name: Publish GitHub release
+
+# Builds the installable ZIP for manual installs and attaches it, its checksum
+# and a CycloneDX SBOM to the GitHub release of the pushed tag.
+#
+# Installed sites do not download this ZIP. The update checker in src/Plugin.php
+# is not configured for release assets, so it installs GitHub's source archive
+# of the tag of the latest release.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Package and release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate version and prepare release notes
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+            echo "Expected a release tag in vMAJOR.MINOR or vMAJOR.MINOR.PATCH format." >&2
+            exit 1
+          fi
+          VERSION="${RELEASE_TAG#v}"
+          HEADER_VERSION="$(awk '/^[[:space:]]*\* Version:/ { print $3; exit }' markdown-alternate.php)"
+          CONSTANT_VERSION="$(sed -n "s/^define( *'MARKDOWN_ALTERNATE_VERSION', *'\([^']*\)' *);.*/\1/p" markdown-alternate.php)"
+          STABLE_TAG="$(awk '/^Stable tag:/ { print $3; exit }' readme.txt)"
+          status=0
+          for pair in "plugin header Version:$HEADER_VERSION" "MARKDOWN_ALTERNATE_VERSION:$CONSTANT_VERSION" "readme.txt Stable tag:$STABLE_TAG"; do
+            if [[ "${pair##*:}" != "$VERSION" ]]; then
+              echo "::error::${pair%:*} is '${pair##*:}', but the tag is $RELEASE_TAG." >&2
+              status=1
+            fi
+          done
+          if (( status )); then exit 1; fi
+          awk -v version="$VERSION" '
+            $0 == "== Changelog ==" { changelog = 1; next }
+            changelog && $0 == "= " version " =" { notes = 1; next }
+            notes && /^=/ { exit }
+            notes { print }
+          ' readme.txt > "$RUNNER_TEMP/release-notes.md"
+          grep -q '^\* ' "$RUNNER_TEMP/release-notes.md"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      # vendor/ is committed and shipped as it is; it must hold no dev packages.
+      - name: Check committed vendor has no dev packages
+        run: .github/scripts/check-vendor.sh
+
+      - name: Build installable plugin ZIP
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/package/markdown-alternate" "$RUNNER_TEMP/dist"
+          rsync -a --exclude-from=.distignore ./ "$RUNNER_TEMP/package/markdown-alternate/"
+          cd "$RUNNER_TEMP/package"
+          zip -qr "$RUNNER_TEMP/dist/markdown-alternate-$VERSION.zip" markdown-alternate
+          unzip -tq "$RUNNER_TEMP/dist/markdown-alternate-$VERSION.zip"
+
+      - name: Install Syft
+        env:
+          DOWNLOAD_TAG_INSTALL_SCRIPT: "false"
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/a0c0d3890a9d79421c403e8fcadec50a2e55bf21/install.sh -o "$RUNNER_TEMP/install-syft.sh"
+          sh "$RUNNER_TEMP/install-syft.sh" -b "$RUNNER_TEMP/bin" v1.57.1
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      # Scan the packaged files, so the SBOM describes what the ZIP contains.
+      # Syft reads vendor/composer/installed.json and the production packages in
+      # composer.lock; at this version it leaves out the lock's packages-dev.
+      - name: Generate SBOM
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/package"
+          syft "dir:markdown-alternate" \
+            --source-name markdown-alternate --source-version "$VERSION" \
+            -o "cyclonedx-json=$RUNNER_TEMP/dist/sbom-$RELEASE_TAG.json"
+
+      - name: Write checksums
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/dist"
+          sha256sum -- * > "$RUNNER_TEMP/SHA256SUMS.txt"
+          mv "$RUNNER_TEMP/SHA256SUMS.txt" .
+          cat SHA256SUMS.txt
+
+      # A release written by hand before the tag was pushed keeps its notes and
+      # only receives the files. Otherwise the readme.txt changelog is used.
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" "$RUNNER_TEMP"/dist/* --clobber
+          else
+            gh release create "$RELEASE_TAG" "$RUNNER_TEMP"/dist/* \
+              --verify-tag --title "Markdown Alternate $VERSION" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi

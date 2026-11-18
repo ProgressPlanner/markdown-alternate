@@ -1,0 +1,283 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 4
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method get_attributes\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method get_available_variations\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method get_id\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method get_price\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method get_price_html\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method get_regular_price\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method get_sale_price\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method get_short_description\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method get_sku\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 3
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method get_stock_quantity\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method get_stock_status\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 2
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method get_type\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method get_variation_price\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 2
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method is_on_sale\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method is_type\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 3
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method managing_stock\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Class WC_Product not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Function get_woocommerce_currency not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Function wc_attribute_label not found\.$#'
+			identifier: function.notFound
+			count: 2
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Function wc_get_formatted_variation not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Function wc_get_product not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Function wc_get_product_stock_status_options not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Function wc_get_product_terms not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Function wc_prices_include_tax not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Method MarkdownAlternate\\Integration\\WooCommerce\:\:add_frontmatter\(\) has parameter \$fields with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Method MarkdownAlternate\\Integration\\WooCommerce\:\:add_frontmatter\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Method MarkdownAlternate\\Integration\\WooCommerce\:\:add_product_post_type\(\) has parameter \$types with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Method MarkdownAlternate\\Integration\\WooCommerce\:\:add_product_post_type\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Method MarkdownAlternate\\Integration\\WooCommerce\:\:add_sections\(\) has parameter \$sections with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Method MarkdownAlternate\\Integration\\WooCommerce\:\:add_sections\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Method MarkdownAlternate\\Integration\\WooCommerce\:\:add_taxonomies\(\) has parameter \$taxonomies with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Method MarkdownAlternate\\Integration\\WooCommerce\:\:add_taxonomies\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Method MarkdownAlternate\\Integration\\WooCommerce\:\:get_product\(\) has invalid return type WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Parameter \$product of method MarkdownAlternate\\Integration\\WooCommerce\:\:build_attributes\(\) has invalid type WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Parameter \$product of method MarkdownAlternate\\Integration\\WooCommerce\:\:build_variations\(\) has invalid type WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Parameter \$product of method MarkdownAlternate\\Integration\\WooCommerce\:\:format_price\(\) has invalid type WC_Product\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Access to property \$model on an unknown class Yoast\\WP\\SEO\\Presentations\\Indexable_Presentation\.$#'
+			identifier: class.notFound
+			count: 4
+			path: src/Integration/YoastLlmsTxt.php
+
+		-
+			message: '#^Call to function is_object\(\) with Yoast\\WP\\SEO\\Presentations\\Indexable_Presentation will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Integration/YoastLlmsTxt.php
+
+		-
+			message: '#^Parameter \$presentation of method MarkdownAlternate\\Integration\\YoastLlmsTxt\:\:rewrite_canonical\(\) has invalid type Yoast\\WP\\SEO\\Presentations\\Indexable_Presentation\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/Integration/YoastLlmsTxt.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 3
+			path: src/Output/ContentRenderer.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: src/Output/ContentRenderer.php
+
+		-
+			message: '#^Method MarkdownAlternate\\Output\\ContentRenderer\:\:render_sections\(\) has parameter \$sections with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Output/ContentRenderer.php
+
+		-
+			message: '#^Parameter \#2 \$user_id of function get_the_author_meta expects int\|false, ''''\|numeric\-string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: src/Output/ContentRenderer.php
+
+		-
+			message: '#^Method MarkdownAlternate\\PostTypeSupport\:\:get_supported_types\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/PostTypeSupport.php
+
+		-
+			message: '#^Method MarkdownAlternate\\Router\\RewriteHandler\:\:add_query_vars\(\) has parameter \$vars with no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Router/RewriteHandler.php
+
+		-
+			message: '#^Method MarkdownAlternate\\Router\\RewriteHandler\:\:add_query_vars\(\) return type has no value type specified in iterable type array\.$#'
+			identifier: missingType.iterableValue
+			count: 1
+			path: src/Router/RewriteHandler.php
