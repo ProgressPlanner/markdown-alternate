@@ -37,7 +37,7 @@ jobs:
       # ever hold production packages, so check it before Composer adds the
       # development tools to this runner's copy.
       - name: Check committed vendor has no dev packages
-        run: php .github/scripts/check-vendor.php
+        run: .github/scripts/check-vendor.sh
 
       - name: Install PHP dependencies
         uses: ramsey/composer-install@a8d0d959dab41457692a5e2041bd9b757a119e3f # 3.2.1

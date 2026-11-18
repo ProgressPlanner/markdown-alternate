@@ -63,7 +63,7 @@ jobs:
 
       # vendor/ is committed and shipped as it is; it must hold no dev packages.
       - name: Check committed vendor has no dev packages
-        run: php .github/scripts/check-vendor.php
+        run: .github/scripts/check-vendor.sh
 
       - name: Build installable plugin ZIP
         run: |
