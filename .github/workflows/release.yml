@@ -83,15 +83,15 @@ jobs:
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       # Scan the packaged files, so the SBOM describes what the ZIP contains.
-      # composer.lock also lists the development tools, which are not shipped,
-      # so packages are read from vendor/composer/installed.json instead.
+      # Syft reads vendor/composer/installed.json and the production packages in
+      # composer.lock; at this version it leaves out the lock's packages-dev.
       - name: Generate SBOM
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           cd "$RUNNER_TEMP/package"
-          syft "dir:markdown-alternate" --exclude ./composer.lock \
+          syft "dir:markdown-alternate" \
             --source-name markdown-alternate --source-version "$VERSION" \
             -o "cyclonedx-json=$RUNNER_TEMP/dist/sbom-$RELEASE_TAG.json"
 
