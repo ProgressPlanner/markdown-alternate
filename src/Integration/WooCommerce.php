@@ -97,10 +97,18 @@ class WooCommerce {
 			return $fields;
 		}
 
+		// The post author is the shop user who created the product, not product information.
+		// Products are registered without author support, and WooCommerce never displays it.
+		unset( $fields['author'] );
+
 		$values = array(
+			'url'          => array( 'url', get_permalink( $product->get_id() ) ),
+			'modified'     => array( 'date', $this->format_date( $product->get_date_modified() ) ),
 			'product_type' => array( 'string', $product->get_type() ),
 			'currency'     => array( 'string', get_woocommerce_currency() ),
 			'sku'          => array( 'string', $product->get_sku() ),
+			// GTIN, UPC, EAN or ISBN: WooCommerce stores one global identifier without its kind (9.2+).
+			'gtin'         => array( 'string', method_exists( $product, 'get_global_unique_id' ) ? $product->get_global_unique_id() : '' ),
 			'stock_status' => array( 'string', $product->get_stock_status() ),
 		);
 		if ( $product->is_type( 'variable' ) ) {
@@ -111,10 +119,15 @@ class WooCommerce {
 			$values['regular_price'] = array( 'number', $product->get_regular_price() );
 			if ( $product->is_on_sale() ) {
 				$values['sale_price'] = array( 'number', $product->get_sale_price() );
+				$values['sale_ends']  = array( 'date', $this->format_date( $product->get_date_on_sale_to() ) );
 			}
 		}
 		if ( $product->managing_stock() ) {
 			$values['stock_quantity'] = array( 'number', $product->get_stock_quantity() );
+		}
+		if ( wc_review_ratings_enabled() && $product->get_rating_count() > 0 ) {
+			$values['rating']       = array( 'number', $product->get_average_rating() );
+			$values['review_count'] = array( 'number', $product->get_review_count() );
 		}
 		foreach ( $values as $key => list( $type, $value ) ) {
 			if ( '' !== $value && null !== $value ) {
@@ -132,6 +145,16 @@ class WooCommerce {
 			);
 		}
 		return $fields;
+	}
+
+	/**
+	 * Format a WooCommerce date like the core frontmatter date field.
+	 *
+	 * @param \WC_DateTime|null $date Date or null when not set.
+	 * @return string Y-m-d in the site timezone, or an empty string.
+	 */
+	private function format_date( $date ): string {
+		return $date ? $date->date_i18n( 'Y-m-d' ) : '';
 	}
 
 	/**
