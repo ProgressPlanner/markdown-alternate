@@ -23,7 +23,7 @@ It is useful for:
 
 After activation, supported content can be requested in multiple ways:
 
-* Append `.md` to a post or page URL
+* Append `.md` to a post or page URL, or to a category or tag archive URL
 * Send an `Accept: text/markdown` header to the normal permalink
 * Use `?format=markdown` when custom headers are not practical
 
@@ -101,6 +101,11 @@ Yes. When Yoast SEO is active and generating `llms.txt`, Markdown Alternate can 
 Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__return_true' );`, posts that Yoast SEO marks noindex get no `.md` URL, no query parameter fallback, no Accept redirect and no alternate link. Their links in newly generated Yoast llms.txt files keep the HTML URL. Regenerate llms.txt after enabling the filter. By default posts keep their Markdown version.
 
 == Changelog ==
+
+= Unreleased =
+* Added Markdown versions of category and tag archives, and of WooCommerce product category, tag and brand archives
+* Changed frontmatter links to terms of taxonomies that are not served to point to their HTML archive instead of a `.md` URL that returned 404
+* Changed frontmatter links to terms to absolute URLs, like the links in the body
 
 = 1.2.0 =
 * Added WooCommerce product metadata, formatted prices, short descriptions, visible attributes, and variations

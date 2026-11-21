@@ -18,6 +18,7 @@ Markdown Alternate turns your existing WordPress content into Markdown on demand
 ## What it does
 
 - Serves posts and pages at `.md` URLs
+- Serves category and tag archives at `.md` URLs, listing their posts
 - Supports nested pages and date-based permalinks
 - Supports content negotiation via `Accept: text/markdown`
 - Supports `?format=markdown` when headers are not practical
@@ -32,6 +33,7 @@ Markdown Alternate turns your existing WordPress content into Markdown on demand
 https://example.com/hello-world.md
 https://example.com/about/team.md
 https://example.com/2024/01/my-post.md
+https://example.com/category/news.md
 https://example.com/hello-world/?format=markdown
 ```
 
@@ -51,10 +53,10 @@ author: "Author Name"
 featured_image: "https://example.com/image.jpg"
 categories:
   - name: "Category A"
-    url: "/category/category-a.md"
+    url: "https://example.com/category/category-a.md"
 tags:
   - name: "tag1"
-    url: "/tag/tag1.md"
+    url: "https://example.com/tag/tag1.md"
 ---
 # Post Title
 
@@ -136,6 +138,11 @@ Variable products use `price` and `price_max` for the minimum and maximum catalo
 prices. A future sale is not reported as an active sale. SKUs in the body are
 code spans so they can be copied exactly.
 
+Product categories, tags, and brands are served at their `.md` URL too, which
+product frontmatter links to. They list their products in catalog order, with the
+displayed price and availability, leaving out products hidden from the catalog
+(and out-of-stock products when the shop hides them).
+
 Product responses bypass the shared Markdown transient cache and send private,
 no-store HTTP headers because prices can depend on the current customer. This
 also keeps stock, price, and variation updates fresh. Posts and pages retain their
@@ -176,6 +183,40 @@ add_filter( 'markdown_alternate_skip_noindexed', '__return_true' );
 ```
 
 The filter receives the post as its second argument. The check reads Yoast's effective robots value, including an empty robots array or filters that remove noindex; stale per-post metadata does not override that value. Without Yoast active, nothing is skipped. During Yoast llms.txt generation, skipped posts keep their HTML URLs instead of links to unavailable Markdown copies. Regenerate llms.txt after enabling the filter to update an existing file. Markdown responses retain their canonical Link header; this opt-in does not add a blanket noindex header.
+
+### Category, tag, and other term archives
+
+Category and tag archives are served at their `.md` URL. The output has
+frontmatter with the term's name, HTML URL, taxonomy, number of posts, and parent;
+the term description; its child terms; and its published posts, newest first. Only
+the first 100 posts are listed, followed by a link to the HTML archive for the rest.
+The `?format=markdown` fallback, the Accept redirect, and the alternate link work
+on these archives as they do on posts.
+
+Frontmatter links to a term point to its `.md` URL only when its taxonomy is
+served; other terms link to their HTML archive. Serve another taxonomy with
+`markdown_alternate_supported_taxonomies`:
+
+```php
+add_filter( 'markdown_alternate_supported_taxonomies', function( $taxonomies ) {
+    $taxonomies[] = 'genre';
+    return $taxonomies;
+} );
+```
+
+| Filter | Value to return |
+| --- | --- |
+| `markdown_alternate_supported_taxonomies` | Taxonomies whose archives are served; defaults to `category` and `post_tag` (WooCommerce adds `product_cat`, `product_tag`, and `product_brand`). |
+| `markdown_alternate_term_frontmatter_content_lines` | Typed fields of a term archive, in the same format as posts. |
+| `markdown_alternate_term_sections` | Body sections: `title` (0), `description` (100), `children` (110), and `items` (120). |
+| `markdown_alternate_term_query_args` | `WP_Query` arguments for the listed posts. |
+| `markdown_alternate_term_item` | The Markdown list item of one post. |
+| `markdown_alternate_term_posts_limit` | How many posts are listed; default 100. |
+| `markdown_alternate_term_cache_enabled` | `false` to send private, no-store headers for an archive. |
+| `markdown_alternate_skip_noindexed_terms` | `true` to withhold archives that Yoast SEO marks noindex. |
+
+Term archives are not stored in the Markdown transient cache: they change
+whenever a post is published in them.
 
 ### Extend frontmatter
 
