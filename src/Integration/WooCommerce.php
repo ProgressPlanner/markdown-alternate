@@ -40,6 +40,7 @@ class WooCommerce {
 		add_filter( 'markdown_alternate_term_item', array( $this, 'term_item' ), 10, 3 );
 		add_filter( 'markdown_alternate_term_frontmatter_content_lines', array( $this, 'term_frontmatter' ), 10, 2 );
 		add_filter( 'markdown_alternate_term_cache_enabled', array( $this, 'term_cache_enabled' ), 10, 2 );
+		add_filter( 'markdown_alternate_is_noindexed', array( $this, 'is_noindexed' ), 10, 2 );
 	}
 
 	/**
@@ -153,6 +154,29 @@ class WooCommerce {
 	 */
 	public function term_cache_enabled( $enabled, $term ): bool {
 		return in_array( $term->taxonomy, $this->product_taxonomies(), true ) ? false : (bool) $enabled;
+	}
+
+	/**
+	 * Treat the cart, checkout and My account pages as noindexed.
+	 *
+	 * WooCommerce keeps them out of search itself, through wp_robots while the
+	 * HTML page renders, which is not visible from a Markdown request. They
+	 * depend on the customer and have nothing an agent can use.
+	 *
+	 * @param bool  $noindexed Whether the post is treated as noindexed.
+	 * @param mixed $post      The post being checked.
+	 * @return bool Whether the post is treated as noindexed.
+	 */
+	public function is_noindexed( $noindexed, $post ): bool {
+		if ( $noindexed || ! $post instanceof WP_Post || 'page' !== $post->post_type ) {
+			return (bool) $noindexed;
+		}
+		foreach ( array( 'cart', 'checkout', 'myaccount' ) as $page ) {
+			if ( (int) wc_get_page_id( $page ) === (int) $post->ID ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

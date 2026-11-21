@@ -318,6 +318,31 @@ try {
 		$md_alt_response = wp_remote_get( $md_alt_md_url );
 		md_alt_woo_assert( 404 === wp_remote_retrieve_response_code( $md_alt_response ) && false === strpos( wp_remote_retrieve_body( $md_alt_response ), 'product_type:' ), 'Unpublished products return 404' );
 	}
+	// Cart, checkout and My account count as noindexed, so the opt-in leaves them out.
+	$md_alt_shop_pages = array_filter(
+		array_map( 'wc_get_page_id', array( 'cart', 'checkout', 'myaccount' ) ),
+		static function ( $id ) {
+			return $id > 0 && get_post( $id );
+		}
+	);
+	$md_alt_plain_page = wp_insert_post(
+		array(
+			'post_type'   => 'page',
+			'post_status' => 'publish',
+			'post_title'  => 'Markdown test page',
+		)
+	);
+	$md_alt_woo_ids[]  = $md_alt_plain_page;
+	foreach ( $md_alt_shop_pages as $md_alt_shop_page ) {
+		md_alt_woo_assert( PostTypeSupport::is_noindexed( get_post( $md_alt_shop_page ) ) && ! PostTypeSupport::should_skip_noindexed( get_post( $md_alt_shop_page ) ), 'Shop page ' . $md_alt_shop_page . ' is noindexed but kept without the opt-in' );
+	}
+	add_filter( 'markdown_alternate_skip_noindexed', '__return_true' );
+	foreach ( $md_alt_shop_pages as $md_alt_shop_page ) {
+		md_alt_woo_assert( PostTypeSupport::should_skip_noindexed( get_post( $md_alt_shop_page ) ), 'Shop page ' . $md_alt_shop_page . ' is skipped with the opt-in' );
+	}
+	md_alt_woo_assert( ! PostTypeSupport::should_skip_noindexed( get_post( $md_alt_plain_page ) ), 'An ordinary page is not skipped with the opt-in' );
+	remove_filter( 'markdown_alternate_skip_noindexed', '__return_true' );
+
 	// Term archives: product categories, nested, with catalog visibility and the list limit.
 	$md_alt_parent_term = wp_insert_term( 'Markdown archive parent ' . wp_generate_uuid4(), 'product_cat' );
 	$md_alt_child_term  = wp_insert_term( 'Markdown archive child ' . wp_generate_uuid4(), 'product_cat', array( 'parent' => $md_alt_parent_term['term_id'] ) );

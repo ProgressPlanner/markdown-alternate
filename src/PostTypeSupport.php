@@ -66,6 +66,29 @@ class PostTypeSupport {
 	}
 
 	/**
+	 * Check whether a post is marked noindex.
+	 *
+	 * Reads Yoast SEO, then lets integrations and sites add posts that are
+	 * kept out of search by other means, such as the WooCommerce cart.
+	 *
+	 * @param \WP_Post $post The post to check.
+	 * @return bool True if the post is marked noindex.
+	 */
+	public static function is_noindexed( \WP_Post $post ): bool {
+		/**
+		 * Filters whether a post is treated as noindexed.
+		 *
+		 * Only consulted when the site opts in with markdown_alternate_skip_noindexed.
+		 *
+		 * @since 1.3.0
+		 *
+		 * @param bool     $noindexed Whether Yoast SEO marks the post noindex.
+		 * @param \WP_Post $post      The post being checked.
+		 */
+		return (bool) apply_filters( 'markdown_alternate_is_noindexed', self::is_noindexed_by_yoast( $post ), $post );
+	}
+
+	/**
 	 * Check whether Yoast SEO marks a post noindex.
 	 *
 	 * Prefers Yoast's effective robots value, which folds in the per-post
@@ -78,7 +101,7 @@ class PostTypeSupport {
 	 * @param \WP_Post $post The post to check.
 	 * @return bool True if Yoast marks the post noindex.
 	 */
-	public static function is_noindexed( \WP_Post $post ): bool {
+	private static function is_noindexed_by_yoast( \WP_Post $post ): bool {
 		if ( ! function_exists( 'YoastSEO' ) ) {
 			return false;
 		}

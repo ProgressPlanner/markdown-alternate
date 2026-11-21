@@ -354,6 +354,29 @@ $md_alt_tests['Opting in never skips an indexed post and receives the post'] = s
 	md_alt_assert_same( false, PostTypeSupport::should_skip_noindexed( $post ), 'indexed' );
 };
 
+$md_alt_tests['Integrations can mark posts noindexed that Yoast indexes'] = static function () {
+	$post                                  = md_alt_test_fixture( 'ordinary' );
+	$GLOBALS['md_alt_test_state']['yoast'] = array( 'index' => 'index' );
+	add_filter(
+		'markdown_alternate_is_noindexed',
+		static function ( $noindexed, $filtered_post ) use ( $post ) {
+			md_alt_assert_same( false, $noindexed, 'Yoast answer' );
+			md_alt_assert_same( $post, $filtered_post, 'post' );
+			return true;
+		},
+		10,
+		2
+	);
+	md_alt_assert_same( false, PostTypeSupport::should_skip_noindexed( $post ), 'not opted in' );
+	add_filter(
+		'markdown_alternate_skip_noindexed',
+		static function () {
+			return true;
+		}
+	);
+	md_alt_assert_same( true, PostTypeSupport::should_skip_noindexed( $post ), 'opted in' );
+};
+
 $md_alt_tests['Disabling cache ignores existing entries and never stores customer output'] = static function () {
 	$post     = md_alt_test_fixture( 'ordinary' );
 	$renderer = new ContentRenderer();

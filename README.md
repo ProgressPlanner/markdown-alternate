@@ -188,7 +188,15 @@ By default a post keeps its markdown copy even when an SEO plugin marks it noind
 add_filter( 'markdown_alternate_skip_noindexed', '__return_true' );
 ```
 
-The filter receives the post as its second argument. The check reads Yoast's effective robots value, including an empty robots array or filters that remove noindex; stale per-post metadata does not override that value. Without Yoast active, nothing is skipped. During Yoast llms.txt generation, skipped posts keep their HTML URLs instead of links to unavailable Markdown copies. Regenerate llms.txt after enabling the filter to update an existing file. Markdown responses retain their canonical Link header; this opt-in does not add a blanket noindex header.
+The filter receives the post as its second argument. The check reads Yoast's effective robots value, including an empty robots array or filters that remove noindex; stale per-post metadata does not override that value. Without Yoast active, nothing is skipped unless an integration marks the post. With WooCommerce active, the cart, checkout and My account pages count as noindexed, as WooCommerce keeps them out of search itself. During Yoast llms.txt generation, skipped posts keep their HTML URLs instead of links to unavailable Markdown copies. Regenerate llms.txt after enabling the filter to update an existing file. Markdown responses retain their canonical Link header; this opt-in does not add a blanket noindex header.
+
+Mark other posts as noindexed, for example pages another plugin keeps out of search, with `markdown_alternate_is_noindexed`:
+
+```php
+add_filter( 'markdown_alternate_is_noindexed', function( $noindexed, $post ) {
+    return $noindexed || 'members-area' === $post->post_name;
+}, 10, 2 );
+```
 
 ### Category, tag, and other term archives
 
