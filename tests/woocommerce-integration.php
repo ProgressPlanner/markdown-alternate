@@ -286,7 +286,7 @@ try {
 	$md_alt_archive = ( new TermRenderer() )->render( $md_alt_child );
 	remove_filter( 'markdown_alternate_term_posts_limit', $md_alt_limit );
 	md_alt_woo_assert( 1 === substr_count( $md_alt_archive, '- [Archive visible' ) && false !== strpos( $md_alt_archive, '](' . get_term_link( $md_alt_child ) . ')' ), 'Product archive limit links to the HTML archive for the rest' );
-	md_alt_woo_assert( false !== strpos( md_alt_woo_render( $md_alt_archive_ids[0] ), 'url: "' . rtrim( (string) wp_parse_url( get_term_link( $md_alt_child ), PHP_URL_PATH ), '/' ) . '.md"' ), 'Product frontmatter links its category to the served Markdown archive' );
+	md_alt_woo_assert( false !== strpos( md_alt_woo_render( $md_alt_archive_ids[0] ), 'url: "' . rtrim( get_term_link( $md_alt_child ), '/' ) . '.md"' ), 'Product frontmatter links its category to the served Markdown archive' );
 
 	WP_CLI::success( 'WooCommerce integration tests passed.' );
 } finally {
