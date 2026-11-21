@@ -21,6 +21,12 @@ parameters:
 		-
 			message: '#^Call to method get_id\(\) on an unknown class WC_Product\.$#'
 			identifier: class.notFound
+			count: 2
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Call to method get_name\(\) on an unknown class WC_Product\.$#'
+			identifier: class.notFound
 			count: 1
 			path: src/Integration/WooCommerce.php
 
@@ -69,7 +75,7 @@ parameters:
 		-
 			message: '#^Call to method get_stock_status\(\) on an unknown class WC_Product\.$#'
 			identifier: class.notFound
-			count: 2
+			count: 3
 			path: src/Integration/WooCommerce.php
 
 		-
@@ -111,7 +117,7 @@ parameters:
 		-
 			message: '#^Function get_woocommerce_currency not found\.$#'
 			identifier: function.notFound
-			count: 1
+			count: 2
 			path: src/Integration/WooCommerce.php
 
 		-
@@ -135,11 +141,17 @@ parameters:
 		-
 			message: '#^Function wc_get_product_stock_status_options not found\.$#'
 			identifier: function.notFound
-			count: 1
+			count: 2
 			path: src/Integration/WooCommerce.php
 
 		-
 			message: '#^Function wc_get_product_terms not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
+			message: '#^Function wc_get_product_visibility_term_ids not found\.$#'
 			identifier: function.notFound
 			count: 1
 			path: src/Integration/WooCommerce.php

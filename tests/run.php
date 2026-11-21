@@ -123,10 +123,20 @@ $md_alt_tests['Typed metadata and taxonomy hooks remain compatible with product 
 		10,
 		2
 	);
+	// An integration that serves product category archives registers the taxonomy.
+	add_filter(
+		'markdown_alternate_supported_taxonomies',
+		static function ( $taxonomies ) {
+			$taxonomies[] = 'product_cat';
+			return $taxonomies;
+		}
+	);
 	$output = ( new ContentRenderer() )->render( $post );
 	foreach ( array( 'price: 12.50', 'currency: "EUR"', 'stock: 0', "taxed: true\n", "exempt: false\n", 'categories:', 'brands:', 'url: "/product-category/books.md"', 'value: 0', "custom_flag: true\n---" ) as $fragment ) {
 		md_alt_assert_contains( $fragment, $output );
 	}
+	// A taxonomy whose archives are not served links to its HTML archive, never to a .md URL that would 404.
+	md_alt_assert_contains( 'url: "/brand/test/"', $output );
 	md_alt_assert_contains( 'name: "A \\"quote\\" and \\\\ slash"', $output );
 };
 
