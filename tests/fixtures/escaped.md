@@ -5,10 +5,10 @@ author: "Author \"Q\""
 featured_image: "https://example.com/image.jpg?a=1&b=2"
 categories:
   - name: "A \"quoted\" \\ category"
-    url: "/category/test.md"
+    url: "https://example.com/category/test.md"
 tags:
   - name: "tag & name"
-    url: "/tag/test.md"
+    url: "https://example.com/tag/test.md"
 ---
 
 # A "quoted" & \ title

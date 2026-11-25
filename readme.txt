@@ -105,6 +105,7 @@ Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__ret
 = Unreleased =
 * Added Markdown versions of category and tag archives, and of WooCommerce product category, tag and brand archives
 * Changed frontmatter links to terms of taxonomies that are not served to point to their HTML archive instead of a `.md` URL that returned 404
+* Changed frontmatter links to terms to absolute URLs, like the links in the body
 * Added product URL, modified date, GTIN, sale end date and ratings to WooCommerce product frontmatter
 * Removed the post author from WooCommerce product frontmatter
 

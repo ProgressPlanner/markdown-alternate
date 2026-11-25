@@ -53,10 +53,10 @@ author: "Author Name"
 featured_image: "https://example.com/image.jpg"
 categories:
   - name: "Category A"
-    url: "/category/category-a.md"
+    url: "https://example.com/category/category-a.md"
 tags:
   - name: "tag1"
-    url: "/tag/tag1.md"
+    url: "https://example.com/tag/tag1.md"
 ---
 # Post Title
 

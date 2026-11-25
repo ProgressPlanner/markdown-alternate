@@ -300,21 +300,22 @@ class ContentRenderer {
 	 * Get the frontmatter URL for a term (category or tag).
 	 *
 	 * Terms of taxonomies whose archives are served as markdown link to their
-	 * .md URL; other terms link to their HTML archive, which exists.
+	 * .md URL; other terms link to their HTML archive, which exists. URLs are
+	 * absolute, like the links in the body, so the frontmatter still resolves
+	 * when it is read on its own.
 	 *
 	 * @param \WP_Term $term     The term object.
 	 * @param string   $taxonomy The term's taxonomy.
-	 * @return string The relative URL for the term.
+	 * @return string The absolute URL for the term.
 	 */
 	private function get_term_markdown_url( \WP_Term $term, string $taxonomy ): string {
 		$url = get_term_link( $term );
 		if ( is_wp_error( $url ) ) {
 			return '';
 		}
-		// Convert to relative URL and append .md when the archive is served as markdown.
-		$path = (string) wp_parse_url( $url, PHP_URL_PATH );
+		// Append .md when the archive is served as markdown.
 		return TaxonomySupport::is_supported( $taxonomy ) && ! TaxonomySupport::should_skip_noindexed( $term )
-			? rtrim( $path, '/' ) . '.md' : $path;
+			? rtrim( $url, '/' ) . '.md' : $url;
 	}
 
     /**
