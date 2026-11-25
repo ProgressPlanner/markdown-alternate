@@ -41,7 +41,7 @@ function md_alt_woo_render( $id ) {
 
 $md_alt_woo_ids     = array();
 $md_alt_woo_options = array();
-foreach ( array( 'woocommerce_currency', 'woocommerce_hide_out_of_stock_items', 'woocommerce_calc_taxes', 'woocommerce_prices_include_tax', 'woocommerce_tax_display_shop', 'woocommerce_default_country' ) as $md_alt_option ) {
+foreach ( array( 'woocommerce_currency', 'woocommerce_hide_out_of_stock_items', 'woocommerce_calc_taxes', 'woocommerce_prices_include_tax', 'woocommerce_tax_display_shop', 'woocommerce_default_country', 'woocommerce_enable_reviews', 'woocommerce_enable_review_rating' ) as $md_alt_option ) {
 	$md_alt_woo_options[ $md_alt_option ] = get_option( $md_alt_option );
 }
 $md_alt_tax_id = 0;
@@ -63,6 +63,11 @@ try {
 	$md_alt_product->set_short_description( '<p>Short <a href="https://example.com">link</a>.</p><ul><li>One</li><li>Two</li></ul>' );
 	$md_alt_product->set_manage_stock( true );
 	$md_alt_product->set_stock_quantity( 0 );
+	$md_alt_product->set_date_on_sale_to( '2099-06-30 23:59:59' );
+	$md_alt_gtin = method_exists( $md_alt_product, 'set_global_unique_id' ) ? (string) wp_rand( 1000000000000, 9999999999999 ) : '';
+	if ( '' !== $md_alt_gtin ) {
+		$md_alt_product->set_global_unique_id( $md_alt_gtin );
+	}
 	$md_alt_woo_ids[] = $md_alt_product->save();
 	$md_alt_id        = $md_alt_product->get_id();
 	foreach ( array(
@@ -90,6 +95,14 @@ try {
 	md_alt_woo_assert( false !== strpos( $md_alt_output, 'stock_quantity: 0' ), 'Zero stock retained' );
 	md_alt_woo_assert( false !== strpos( $md_alt_output, "prices_include_tax: false\n" ), 'Catalog prices state that tax is excluded when taxes are off' );
 	md_alt_woo_assert( false !== strpos( $md_alt_output, '**SKU:** `md-alt-test-' ), 'SKU rendered as an unescaped code span' );
+	md_alt_woo_assert( false !== strpos( $md_alt_output, 'url: "' . get_permalink( $md_alt_id ) . '"' ), 'Product URL points to the HTML page' );
+	md_alt_woo_assert( 1 === preg_match( '/^modified: \d{4}-\d{2}-\d{2}$/m', $md_alt_output ), 'Modified date included' );
+	md_alt_woo_assert( false !== strpos( $md_alt_output, "sale_ends: 2099-06-30\n" ), 'Active sale end date included' );
+	md_alt_woo_assert( 0 === preg_match( '/^author:/m', $md_alt_output ), 'Product frontmatter has no post author' );
+	md_alt_woo_assert( false === strpos( $md_alt_output, 'rating:' ), 'Rating omitted without reviews' );
+	if ( '' !== $md_alt_gtin ) {
+		md_alt_woo_assert( false !== strpos( $md_alt_output, 'gtin: "' . $md_alt_gtin . '"' ), 'GTIN included when set' );
+	}
 	md_alt_woo_assert( false !== strpos( $md_alt_output, '[link](https://example.com)' ) && false !== strpos( $md_alt_output, '- One' ), 'Short description keeps links and lists' );
 	md_alt_woo_assert( false === strpos( $md_alt_output, '## Attributes' ) && false === strpos( $md_alt_output, '## Variations' ), 'No empty product sections' );
 	md_alt_woo_assert( false === get_transient( 'md_alt_cache_' . $md_alt_id ), 'Product output is not stored in the shared cache' );
@@ -98,7 +111,23 @@ try {
 	$md_alt_product->set_price( '20' );
 	$md_alt_product->save();
 	$md_alt_output = md_alt_woo_render( $md_alt_id );
-	md_alt_woo_assert( false === strpos( $md_alt_output, 'sale_price:' ) && false !== strpos( $md_alt_output, "price: 20\n" ), 'Future sale is not advertised as active' );
+	md_alt_woo_assert( false === strpos( $md_alt_output, 'sale_price:' ) && false === strpos( $md_alt_output, 'sale_ends:' ) && false !== strpos( $md_alt_output, "price: 20\n" ), 'Future sale is not advertised as active' );
+
+	update_option( 'woocommerce_enable_reviews', 'yes' );
+	update_option( 'woocommerce_enable_review_rating', 'yes' );
+	$md_alt_product->set_rating_counts(
+		array(
+			4 => 1,
+			5 => 1,
+		)
+	);
+	$md_alt_product->set_average_rating( '4.50' );
+	$md_alt_product->set_review_count( 2 );
+	$md_alt_product->save();
+	$md_alt_output = md_alt_woo_render( $md_alt_id );
+	md_alt_woo_assert( false !== strpos( $md_alt_output, "rating: 4.50\n" ) && false !== strpos( $md_alt_output, "review_count: 2\n" ), 'Rating and review count included when reviews exist' );
+	update_option( 'woocommerce_enable_review_rating', 'no' );
+	md_alt_woo_assert( false === strpos( md_alt_woo_render( $md_alt_id ), 'rating:' ), 'Rating omitted when ratings are disabled' );
 
 	$md_alt_visible = new WC_Product_Attribute();
 	$md_alt_visible->set_name( 'Material' );

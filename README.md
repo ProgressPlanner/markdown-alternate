@@ -123,9 +123,12 @@ With WooCommerce active, published products are available at their `.md` URL and
 through the same query parameter and Accept-header routes as posts and pages.
 Standalone variations are not exposed as separate Markdown pages.
 
-Product output includes typed metadata for SKU, currency, product type, prices,
-and stock; product categories, tags, and registered brands; a price/availability
-summary; the formatted short description; visible attributes; and available
+Product output includes typed metadata for the product URL, last modified date,
+SKU, GTIN (WooCommerce 9.2+), currency, product type, prices, sale end date,
+stock, and rating with review count (when ratings are enabled and the product has
+reviews); the post author is left out. It also includes product categories, tags,
+and registered brands; a price/availability summary; the formatted short
+description; visible attributes; and available
 variations. Password protection and publication checks still apply.
 
 The body uses WooCommerce's displayed prices, including tax settings, currency,
