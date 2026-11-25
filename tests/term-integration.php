@@ -90,6 +90,25 @@ try {
 		)
 	);
 	md_alt_term_assert( $md_alt_term_post_id > 0, 'Archive regression fixture created' );
+	if ( '1' === getenv( 'MD_ALT_TEST_HTTP' ) ) {
+		$md_alt_admin_ids = get_users(
+			array(
+				'role'   => 'administrator',
+				'number' => 1,
+				'fields' => 'ID',
+			)
+		);
+		md_alt_term_assert( ! empty( $md_alt_admin_ids ), 'HTTP cache tests have an administrator fixture' );
+		$md_alt_auth_cookie = wp_generate_auth_cookie( (int) $md_alt_admin_ids[0], time() + 600, 'logged_in' );
+		foreach ( array( array( LOGGED_IN_COOKIE => $md_alt_auth_cookie ), array( 'wp_woocommerce_session_fixture' => 'test-session' ) ) as $md_alt_cookies ) {
+			$md_alt_response = wp_remote_get(
+				UrlConverter::convert_to_markdown_url( get_term_link( $md_alt_term_child ) ),
+				array( 'cookies' => $md_alt_cookies )
+			);
+			md_alt_term_assert( 200 === wp_remote_retrieve_response_code( $md_alt_response ), 'Visitor-specific archive request returns Markdown' );
+			md_alt_term_assert( false !== strpos( wp_remote_retrieve_header( $md_alt_response, 'cache-control' ), 'private, no-store' ), 'Visitor-specific archives forbid shared HTTP caching' );
+		}
+	}
 
 	// Exercise the public request parser with root and subdirectory home URLs.
 	foreach ( array( false, true ) as $md_alt_subdirectory ) {

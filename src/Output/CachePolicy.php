@@ -21,7 +21,33 @@ class CachePolicy {
 	 * @return bool Whether shared caching is safe for this request.
 	 */
 	public static function is_enabled( WP_Post $post ): bool {
-		if ( is_user_logged_in() || '' !== $post->post_password ) {
+		if ( ! self::is_public_request() || '' !== $post->post_password ) {
+			return false;
+		}
+
+		/**
+		 * Filters whether otherwise eligible output can use shared caching.
+		 *
+		 * Disable for custom sessions or other visitor-dependent content.
+		 * The HTTP router also uses this to send private, no-store headers.
+		 * Logged-in visitors, password-protected posts and known session
+		 * cookies always bypass caching, regardless of this filter.
+		 *
+		 * @since 1.2.0
+		 *
+		 * @param bool    $enabled Whether output may be cached. Default true.
+		 * @param WP_Post $post    The post being rendered.
+		 */
+		return (bool) apply_filters( 'markdown_alternate_cache_enabled', true, $post );
+	}
+
+	/**
+	 * Whether a post or archive request has no known visitor-specific state.
+	 *
+	 * @return bool Whether the request is eligible for shared caching.
+	 */
+	public static function is_public_request(): bool {
+		if ( is_user_logged_in() ) {
 			return false;
 		}
 
@@ -41,19 +67,6 @@ class CachePolicy {
 			}
 		}
 
-		/**
-		 * Filters whether otherwise eligible output can use shared caching.
-		 *
-		 * Disable for custom sessions or other visitor-dependent content.
-		 * The HTTP router also uses this to send private, no-store headers.
-		 * Logged-in visitors, password-protected posts and known session
-		 * cookies always bypass caching, regardless of this filter.
-		 *
-		 * @since 1.2.0
-		 *
-		 * @param bool    $enabled Whether output may be cached. Default true.
-		 * @param WP_Post $post    The post being rendered.
-		 */
-		return (bool) apply_filters( 'markdown_alternate_cache_enabled', true, $post );
+		return true;
 	}
 }

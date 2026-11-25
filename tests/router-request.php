@@ -42,6 +42,15 @@ namespace {
 	function is_singular() {
 		return true;
 	}
+	function is_category() {
+		return false;
+	}
+	function is_tag() {
+		return false;
+	}
+	function is_tax() {
+		return false;
+	}
 	function get_post_status( $post ) {
 		return 'publish';
 	}

@@ -265,7 +265,7 @@ class RewriteHandler {
 		 * @param bool    $enabled Whether output may be cached. Default true.
 		 * @param WP_Term $term    The term being served.
 		 */
-		if ( ! apply_filters( 'markdown_alternate_term_cache_enabled', true, $term ) ) {
+		if ( ! CachePolicy::is_public_request() || ! apply_filters( 'markdown_alternate_term_cache_enabled', true, $term ) ) {
 			nocache_headers();
 			header( 'Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0' );
 			if ( ! defined( 'DONOTCACHEPAGE' ) ) {
