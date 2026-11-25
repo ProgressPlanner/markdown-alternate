@@ -103,6 +103,7 @@ Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__ret
 == Changelog ==
 
 = Unreleased =
+* Kept author and date archives in HTML instead of redirecting Markdown requests to missing pages
 * Fixed cover block images running into the first inner heading
 * Omitted aria-hidden and data-URI images from Markdown
 * Preserved iframe embeds as links instead of dropping their content

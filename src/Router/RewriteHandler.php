@@ -612,14 +612,13 @@ class RewriteHandler {
     }
 
 
-    /**
-     * Get canonical URL for current content.
-     *
-     * Supports singular posts/pages, category/tag archives, author archives,
-     * and date archives.
-     *
-     * @return string|null The canonical URL or null if not determinable.
-     */
+	/**
+	 * Get the canonical URL for content with a supported Markdown route.
+	 *
+	 * Author and date archives have no Markdown renderer, so they retain HTML.
+	 *
+	 * @return string|null The canonical URL, or null for unsupported content.
+	 */
     private function get_current_canonical_url(): ?string {
         // Singular posts and pages
         if (is_singular()) {
@@ -635,24 +634,6 @@ class RewriteHandler {
             }
             $link = get_term_link($term);
             return is_wp_error($link) ? null : $link;
-        }
-
-        // Author archives
-        if (is_author()) {
-            return get_author_posts_url(get_queried_object_id());
-        }
-
-        // Date archives
-        if (is_date()) {
-            if (is_year()) {
-                return get_year_link(get_query_var('year'));
-            }
-            if (is_month()) {
-                return get_month_link(get_query_var('year'), get_query_var('monthnum'));
-            }
-            if (is_day()) {
-                return get_day_link(get_query_var('year'), get_query_var('monthnum'), get_query_var('day'));
-            }
         }
 
         return null;

@@ -196,6 +196,9 @@ the first 100 posts are listed, followed by a link to the HTML archive for the r
 The `?format=markdown` fallback, the Accept redirect, and the alternate link work
 on these archives as they do on posts.
 
+Author and date archives remain HTML, including when a client sends
+`Accept: text/markdown`; they have no Markdown renderer.
+
 Frontmatter links to a term point to its `.md` URL only when its taxonomy is
 served; other terms link to their HTML archive. Serve another taxonomy with
 `markdown_alternate_supported_taxonomies`:

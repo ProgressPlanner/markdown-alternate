@@ -99,6 +99,29 @@ try {
 			)
 		);
 		md_alt_term_assert( ! empty( $md_alt_admin_ids ), 'HTTP cache tests have an administrator fixture' );
+		wp_update_post(
+			array(
+				'ID'            => $md_alt_term_post_id,
+				'post_author'   => (int) $md_alt_admin_ids[0],
+				'post_date'     => '2001-02-03 12:00:00',
+				'post_date_gmt' => '2001-02-03 12:00:00',
+			)
+		);
+		$md_alt_accept_args = array(
+			'headers'     => array( 'Accept' => 'text/markdown' ),
+			'redirection' => 0,
+		);
+		foreach ( array( get_author_posts_url( (int) $md_alt_admin_ids[0] ), get_year_link( 2001 ), get_month_link( 2001, 2 ), get_day_link( 2001, 2, 3 ) ) as $md_alt_archive_url ) {
+			$md_alt_response = wp_remote_get( $md_alt_archive_url, $md_alt_accept_args );
+			md_alt_term_assert( 200 === wp_remote_retrieve_response_code( $md_alt_response ), 'Unsupported archive stays on its HTML URL: ' . $md_alt_archive_url );
+			md_alt_term_assert( '' === wp_remote_retrieve_header( $md_alt_response, 'location' ), 'Unsupported archive does not redirect to missing Markdown' );
+			md_alt_term_assert( 0 === strpos( wp_remote_retrieve_header( $md_alt_response, 'content-type' ), 'text/html' ), 'Unsupported archive response remains HTML' );
+		}
+		$md_alt_response = wp_remote_get( get_term_link( $md_alt_term_child ), $md_alt_accept_args );
+		$md_alt_term_url = UrlConverter::convert_to_markdown_url( get_term_link( $md_alt_term_child ) );
+		md_alt_term_assert( 303 === wp_remote_retrieve_response_code( $md_alt_response ) && wp_remote_retrieve_header( $md_alt_response, 'location' ) === $md_alt_term_url, 'Supported category still redirects to Markdown' );
+		$md_alt_response = wp_remote_get( $md_alt_term_url );
+		md_alt_term_assert( 200 === wp_remote_retrieve_response_code( $md_alt_response ) && 0 === strpos( wp_remote_retrieve_header( $md_alt_response, 'content-type' ), 'text/markdown' ), 'Advertised category Markdown URL resolves successfully' );
 		$md_alt_auth_cookie = wp_generate_auth_cookie( (int) $md_alt_admin_ids[0], time() + 600, 'logged_in' );
 		foreach ( array( array( LOGGED_IN_COOKIE => $md_alt_auth_cookie ), array( 'wp_woocommerce_session_fixture' => 'test-session' ) ) as $md_alt_cookies ) {
 			$md_alt_response = wp_remote_get(
