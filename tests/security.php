@@ -203,3 +203,13 @@ $md_alt_tests['Accept negotiation and explicit format precedence remain unchange
 	md_alt_assert_same( 'HTML template', $response['body'] );
 	md_alt_assert_same( 0, $response['renders'] );
 };
+
+$md_alt_tests['Author and date archives retain HTML when Markdown is requested'] = static function () {
+	foreach ( array( 'author', 'year', 'month', 'day' ) as $archive ) {
+		$response = md_alt_router_request( 'accept', $archive );
+		md_alt_assert_same( 200, $response['status'], $archive );
+		md_alt_assert_same( 'HTML template', $response['body'], $archive );
+		md_alt_assert_same( false, isset( $response['headers']['Location'] ), $archive );
+		md_alt_assert_same( 0, $response['renders'], $archive );
+	}
+};

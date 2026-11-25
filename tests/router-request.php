@@ -40,7 +40,37 @@ namespace {
 		return $GLOBALS['md_alt_router_post'];
 	}
 	function is_singular() {
-		return true;
+		return ! in_array( $GLOBALS['md_alt_mode'], array( 'author', 'year', 'month', 'day' ), true );
+	}
+	function is_author() {
+		return 'author' === $GLOBALS['md_alt_mode'];
+	}
+	function is_date() {
+		return in_array( $GLOBALS['md_alt_mode'], array( 'year', 'month', 'day' ), true );
+	}
+	function is_year() {
+		return 'year' === $GLOBALS['md_alt_mode'];
+	}
+	function is_month() {
+		return 'month' === $GLOBALS['md_alt_mode'];
+	}
+	function is_day() {
+		return 'day' === $GLOBALS['md_alt_mode'];
+	}
+	function get_queried_object_id() {
+		return 5;
+	}
+	function get_author_posts_url( $author_id ) {
+		return 'https://example.com/author/test/';
+	}
+	function get_year_link( $year ) {
+		return 'https://example.com/' . $year . '/';
+	}
+	function get_month_link( $year, $month ) {
+		return sprintf( 'https://example.com/%04d/%02d/', $year, $month );
+	}
+	function get_day_link( $year, $month, $day ) {
+		return sprintf( 'https://example.com/%04d/%02d/%02d/', $year, $month, $day );
 	}
 	function is_category() {
 		return false;
@@ -83,10 +113,17 @@ namespace {
 		$GLOBALS['md_alt_response_headers']['Location'] = $url;
 	}
 
-	$md_alt_router_post      = md_alt_test_fixture( 'ordinary' );
-	$md_alt_route            = $argv[1];
-	$md_alt_mode             = $argv[2];
-	$md_alt_query_vars       = array();
+	$md_alt_router_post = md_alt_test_fixture( 'ordinary' );
+	$md_alt_route       = $argv[1];
+	$md_alt_mode        = $argv[2];
+	$md_alt_query_vars  = array();
+	if ( is_date() ) {
+		$md_alt_query_vars = array(
+			'year'     => 2001,
+			'monthnum' => 2,
+			'day'      => 3,
+		);
+	}
 	$md_alt_response_headers = array();
 	$md_alt_response_status  = 200;
 	$_SERVER['REQUEST_URI']  = 'md' === $md_alt_route ? '/post.md' : '/post/';
