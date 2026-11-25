@@ -4,7 +4,7 @@ Tags: markdown, llm, ai, content, api
 Requires at least: 6.0
 Tested up to: 7.2
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -102,8 +102,8 @@ Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__ret
 
 == Changelog ==
 
-= Unreleased =
-* Prevented visitor-specific Markdown from entering shared caches and invalidated previously generated entries
+= 1.2.1 =
+* Security: Prevented logged-in and known session-specific Markdown from entering shared caches, and invalidated previously generated entries
 * Moved Markdown response handlers after default-priority access checks and canonical redirects
 * Added cache-isolation, response-header, and routing-order regression tests
 
