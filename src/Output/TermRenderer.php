@@ -197,6 +197,10 @@ class TermRenderer {
 		 * @param WP_Term $term The term being rendered.
 		 */
 		$args = (array) apply_filters( 'markdown_alternate_term_query_args', $args, $term );
+		if ( ! $post_types ) {
+			// An empty post_type array falls back to posts in WordPress. Match nothing instead.
+			$args['post__in'] = array( 0 );
+		}
 
 		return new \WP_Query( $args );
 	}
@@ -309,7 +313,8 @@ class TermRenderer {
 		if ( is_wp_error( $url ) ) {
 			return '';
 		}
-		return TaxonomySupport::is_supported( $term->taxonomy ) ? UrlConverter::convert_to_markdown_url( $url ) : $url;
+		return TaxonomySupport::is_supported( $term->taxonomy ) && ! TaxonomySupport::should_skip_noindexed( $term )
+			? UrlConverter::convert_to_markdown_url( $url ) : $url;
 	}
 
 	/**

@@ -312,7 +312,8 @@ class ContentRenderer {
 		}
 		// Convert to relative URL and append .md when the archive is served as markdown.
 		$path = (string) wp_parse_url( $url, PHP_URL_PATH );
-		return TaxonomySupport::is_supported( $taxonomy ) ? rtrim( $path, '/' ) . '.md' : $path;
+		return TaxonomySupport::is_supported( $taxonomy ) && ! TaxonomySupport::should_skip_noindexed( $term )
+			? rtrim( $path, '/' ) . '.md' : $path;
 	}
 
     /**
