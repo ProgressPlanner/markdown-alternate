@@ -8,6 +8,8 @@
 namespace MarkdownAlternate\Integration;
 
 use MarkdownAlternate\Converter\MarkdownConverter;
+use MarkdownAlternate\PostTypeSupport;
+use MarkdownAlternate\Router\UrlConverter;
 use WP_Post;
 
 /**
@@ -33,6 +35,124 @@ class WooCommerce {
 		add_filter( 'markdown_alternate_frontmatter_content_lines', array( $this, 'add_frontmatter' ), 10, 2 );
 		add_filter( 'markdown_alternate_content_sections', array( $this, 'add_sections' ), 10, 2 );
 		add_filter( 'markdown_alternate_cache_enabled', array( $this, 'cache_enabled' ), 10, 2 );
+		add_filter( 'markdown_alternate_supported_taxonomies', array( $this, 'add_supported_taxonomies' ) );
+		add_filter( 'markdown_alternate_term_query_args', array( $this, 'term_query_args' ), 10, 2 );
+		add_filter( 'markdown_alternate_term_item', array( $this, 'term_item' ), 10, 3 );
+		add_filter( 'markdown_alternate_term_frontmatter_content_lines', array( $this, 'term_frontmatter' ), 10, 2 );
+		add_filter( 'markdown_alternate_term_cache_enabled', array( $this, 'term_cache_enabled' ), 10, 2 );
+	}
+
+	/**
+	 * Product taxonomies whose archives are served as markdown.
+	 *
+	 * @return string[] Taxonomy names.
+	 */
+	private function product_taxonomies(): array {
+		$taxonomies = array( 'product_cat', 'product_tag' );
+		if ( taxonomy_exists( 'product_brand' ) ) {
+			$taxonomies[] = 'product_brand';
+		}
+		return $taxonomies;
+	}
+
+	/**
+	 * Serve product category, tag and brand archives, which product frontmatter links to.
+	 *
+	 * @param mixed $taxonomies Supported taxonomies.
+	 * @return string[] Supported taxonomies.
+	 */
+	public function add_supported_taxonomies( $taxonomies ): array {
+		$taxonomies = is_array( $taxonomies ) ? $taxonomies : array();
+		return array_values( array_unique( array_merge( $taxonomies, $this->product_taxonomies() ) ) );
+	}
+
+	/**
+	 * List a product archive's products as the shop does: catalog order, catalog visibility.
+	 *
+	 * @param mixed    $args WP_Query arguments.
+	 * @param \WP_Term $term The term being rendered.
+	 * @return array<string, mixed> WP_Query arguments.
+	 */
+	public function term_query_args( $args, $term ): array {
+		$args = is_array( $args ) ? $args : array();
+		if ( ! in_array( $term->taxonomy, $this->product_taxonomies(), true ) ) {
+			return $args;
+		}
+		$args['post_type'] = array( 'product' );
+		$args['orderby']   = array(
+			'menu_order' => 'ASC',
+			'title'      => 'ASC',
+		);
+		// Hidden products, and out of stock ones when the shop hides them, are not in the catalog.
+		$visibility = wc_get_product_visibility_term_ids();
+		$hidden     = array( $visibility['exclude-from-catalog'] ?? 0 );
+		if ( 'yes' === get_option( 'woocommerce_hide_out_of_stock_items' ) ) {
+			$hidden[] = $visibility['outofstock'] ?? 0;
+		}
+		$args['tax_query'][] = array(
+			'taxonomy' => 'product_visibility',
+			'field'    => 'term_taxonomy_id',
+			'terms'    => array_values( array_filter( $hidden ) ),
+			'operator' => 'NOT IN',
+		);
+		return $args;
+	}
+
+	/**
+	 * A product in an archive: name linked to its markdown, displayed price and availability.
+	 *
+	 * @param string   $row  Default list item.
+	 * @param mixed    $post The post.
+	 * @param \WP_Term $term The term being rendered.
+	 * @return string List item.
+	 */
+	public function term_item( $row, $post, $term ): string { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundAfterLastUsed -- Filter signature.
+		$product = $post instanceof WP_Post ? $this->get_product( $post ) : null;
+		if ( ! $product ) {
+			return (string) $row;
+		}
+		$details      = array();
+		$price        = $this->format_price( $product );
+		$stock_labels = wc_get_product_stock_status_options();
+		$status       = $product->get_stock_status();
+		if ( '' !== $price ) {
+			$details[] = $price;
+		}
+		$details[] = $this->plain_markdown( $stock_labels[ $status ] ?? $status );
+		$url       = (string) get_permalink( $product->get_id() );
+		if ( ! PostTypeSupport::should_skip_noindexed( $post ) ) {
+			$url = UrlConverter::convert_to_markdown_url( $url );
+		}
+		return '- [' . str_replace( array( '[', ']' ), array( '\\[', '\\]' ), $this->plain_text( $product->get_name() ) ) . '](' . $url . '): ' . implode( ', ', $details );
+	}
+
+	/**
+	 * State the currency of the prices a product archive lists.
+	 *
+	 * @param mixed    $fields Frontmatter fields.
+	 * @param \WP_Term $term   The term being rendered.
+	 * @return array<string, mixed> Frontmatter fields.
+	 */
+	public function term_frontmatter( $fields, $term ): array {
+		$fields = is_array( $fields ) ? $fields : array();
+		if ( in_array( $term->taxonomy, $this->product_taxonomies(), true ) ) {
+			$fields['currency'] = array(
+				'type'    => 'string',
+				'content' => get_woocommerce_currency(),
+			);
+		}
+		return $fields;
+	}
+
+	/**
+	 * Product archives list prices, which may depend on the customer, like product pages.
+	 *
+	 * @param bool     $enabled Whether the shared cache is enabled.
+	 * @param \WP_Term $term    The term being served.
+	 * @return bool Whether the shared cache is enabled.
+	 */
+	public function term_cache_enabled( $enabled, $term ): bool {
+		return in_array( $term->taxonomy, $this->product_taxonomies(), true ) ? false : (bool) $enabled;
 	}
 
 	/**

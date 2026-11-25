@@ -8,7 +8,10 @@
  */
 
 use MarkdownAlternate\Output\ContentRenderer;
+use MarkdownAlternate\Output\TermRenderer;
 use MarkdownAlternate\PostTypeSupport;
+use MarkdownAlternate\TaxonomySupport;
+use MarkdownAlternate\Router\UrlConverter;
 
 if ( ! defined( 'WP_CLI' ) || ! WP_CLI || ! class_exists( 'WC_Product' ) ) {
 	throw new RuntimeException( 'Run with wp eval-file in an isolated WordPress site with both plugins active.' );
@@ -275,6 +278,46 @@ try {
 		$md_alt_response = wp_remote_get( $md_alt_md_url );
 		md_alt_woo_assert( 404 === wp_remote_retrieve_response_code( $md_alt_response ) && false === strpos( wp_remote_retrieve_body( $md_alt_response ), 'product_type:' ), 'Unpublished products return 404' );
 	}
+	// Term archives: product categories, nested, with catalog visibility and the list limit.
+	$md_alt_parent_term = wp_insert_term( 'Markdown archive parent ' . wp_generate_uuid4(), 'product_cat' );
+	$md_alt_child_term  = wp_insert_term( 'Markdown archive child ' . wp_generate_uuid4(), 'product_cat', array( 'parent' => $md_alt_parent_term['term_id'] ) );
+	$md_alt_terms[]     = array( 'product_cat', $md_alt_child_term['term_id'] );
+	$md_alt_terms[]     = array( 'product_cat', $md_alt_parent_term['term_id'] );
+	$md_alt_archive_ids = array();
+	foreach ( array(
+		'Archive visible one' => 'visible',
+		'Archive visible two' => 'visible',
+		'Archive hidden'      => 'hidden',
+	) as $md_alt_name => $md_alt_visibility ) {
+		$md_alt_archive_product = new WC_Product_Simple();
+		$md_alt_archive_product->set_name( $md_alt_name );
+		$md_alt_archive_product->set_status( 'publish' );
+		$md_alt_archive_product->set_regular_price( '5' );
+		$md_alt_archive_product->set_catalog_visibility( $md_alt_visibility );
+		$md_alt_archive_product->set_category_ids( array( (int) $md_alt_child_term['term_id'] ) );
+		$md_alt_woo_ids[]     = $md_alt_archive_product->save();
+		$md_alt_archive_ids[] = $md_alt_archive_product->get_id();
+	}
+	wp_update_term_count_now( array( (int) $md_alt_child_term['term_id'], (int) $md_alt_parent_term['term_id'] ), 'product_cat' );
+	$md_alt_parent = get_term( (int) $md_alt_parent_term['term_id'], 'product_cat' );
+	$md_alt_child  = get_term( (int) $md_alt_child_term['term_id'], 'product_cat' );
+	md_alt_woo_assert( TaxonomySupport::is_supported( 'product_cat' ) && TaxonomySupport::is_supported( 'product_tag' ) && ! TaxonomySupport::is_supported( 'product_shipping_class' ), 'Product categories and tags are served; other product taxonomies are not' );
+	$md_alt_archive = ( new TermRenderer() )->render( $md_alt_child );
+	md_alt_woo_assert( false !== strpos( $md_alt_archive, 'taxonomy: "product_cat"' ) && false !== strpos( $md_alt_archive, 'currency: "EUR"' ), 'Product archive frontmatter has taxonomy and currency' );
+	md_alt_woo_assert( false !== strpos( $md_alt_archive, 'url: "' . UrlConverter::convert_to_markdown_url( get_term_link( $md_alt_parent ) ) . '"' ), 'Product archive links its parent to Markdown' );
+	md_alt_woo_assert( false !== strpos( $md_alt_archive, '- [Archive visible one](' . UrlConverter::convert_to_markdown_url( get_permalink( $md_alt_archive_ids[0] ) ) . '): ' ), 'Product archive lists products with Markdown links' );
+	md_alt_woo_assert( false === strpos( $md_alt_archive, 'Archive hidden' ), 'Product archive leaves out products hidden from the catalog' );
+	md_alt_woo_assert( false !== strpos( ( new TermRenderer() )->render( $md_alt_parent ), '](' . UrlConverter::convert_to_markdown_url( get_term_link( $md_alt_child ) ) . ') (' ), 'Parent archive lists its subcategories' );
+	$md_alt_limit = static function () {
+		return 1;
+	};
+	add_filter( 'markdown_alternate_term_posts_limit', $md_alt_limit );
+	$md_alt_archive = ( new TermRenderer() )->render( $md_alt_child );
+	remove_filter( 'markdown_alternate_term_posts_limit', $md_alt_limit );
+	md_alt_woo_assert( 1 === substr_count( $md_alt_archive, '- [Archive visible' ) && false !== strpos( $md_alt_archive, '](' . get_term_link( $md_alt_child ) . ')' ), 'Product archive limit links to the HTML archive for the rest' );
+	md_alt_woo_assert( false !== strpos( md_alt_woo_render( $md_alt_archive_ids[0] ), 'url: "' . rtrim( (string) wp_parse_url( get_term_link( $md_alt_child ), PHP_URL_PATH ), '/' ) . '.md"' ), 'Product frontmatter links its category to the served Markdown archive' );
+
+	require __DIR__ . '/term-integration.php';
 	WP_CLI::success( 'WooCommerce integration tests passed.' );
 } finally {
 	foreach ( array_reverse( $md_alt_woo_ids ) as $md_alt_cleanup_id ) {
