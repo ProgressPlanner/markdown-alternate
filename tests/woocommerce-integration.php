@@ -288,6 +288,7 @@ try {
 	md_alt_woo_assert( 1 === substr_count( $md_alt_archive, '- [Archive visible' ) && false !== strpos( $md_alt_archive, '](' . get_term_link( $md_alt_child ) . ')' ), 'Product archive limit links to the HTML archive for the rest' );
 	md_alt_woo_assert( false !== strpos( md_alt_woo_render( $md_alt_archive_ids[0] ), 'url: "' . rtrim( get_term_link( $md_alt_child ), '/' ) . '.md"' ), 'Product frontmatter links its category to the served Markdown archive' );
 
+	require __DIR__ . '/term-integration.php';
 	WP_CLI::success( 'WooCommerce integration tests passed.' );
 } finally {
 	foreach ( array_reverse( $md_alt_woo_ids ) as $md_alt_cleanup_id ) {

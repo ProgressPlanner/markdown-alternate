@@ -198,7 +198,7 @@ class RewriteHandler {
 	 * the term's own archive link, so nested terms, custom taxonomy bases and
 	 * multilingual URLs resolve to the right term.
 	 *
-	 * @param string $path_without_md Request path without the leading slash and the .md extension.
+	 * @param string $path_without_md Request path, including any home subdirectory, without the leading slash and .md extension.
 	 * @return WP_Term|null The term, or null if no supported term archive has this URL.
 	 */
 	private function find_term( string $path_without_md ): ?WP_Term {
@@ -221,7 +221,8 @@ class RewriteHandler {
 		if ( ! is_array( $terms ) ) {
 			return null;
 		}
-		$requested = untrailingslashit( rawurldecode( (string) wp_parse_url( home_url( '/' . $path_without_md ), PHP_URL_PATH ) ) );
+		// REQUEST_URI already includes the home path on subdirectory installations.
+		$requested = untrailingslashit( rawurldecode( '/' . $path_without_md ) );
 		foreach ( $terms as $term ) {
 			$link = get_term_link( $term );
 			if ( is_wp_error( $link ) ) {

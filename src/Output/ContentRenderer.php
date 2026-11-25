@@ -313,7 +313,8 @@ class ContentRenderer {
 			return '';
 		}
 		// Append .md when the archive is served as markdown.
-		return TaxonomySupport::is_supported( $taxonomy ) ? rtrim( $url, '/' ) . '.md' : $url;
+		return TaxonomySupport::is_supported( $taxonomy ) && ! TaxonomySupport::should_skip_noindexed( $term )
+			? rtrim( $url, '/' ) . '.md' : $url;
 	}
 
     /**
