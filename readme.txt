@@ -86,7 +86,7 @@ Example:
 
 = Is the output cached? =
 
-Yes. Markdown output is cached using WordPress transients for 24 hours by default. The cache is automatically bypassed if the post has changed. Developers can adjust the cache duration with the `markdown_alternate_cache_expiration` filter.
+Yes. Eligible anonymous Markdown output is cached using WordPress transients for 24 hours by default. Logged-in visitors, password-protected posts, and visitors with known session or cart cookies bypass shared caching and receive private, no-store responses. Old cache entries are regenerated after the cache-isolation fix. The cache is also regenerated if the post has changed. Developers can adjust the duration with `markdown_alternate_cache_expiration` and disable caching for custom visitor-dependent output with `markdown_alternate_cache_enabled`.
 
 = What does the Markdown output include? =
 
@@ -101,6 +101,11 @@ Yes. When Yoast SEO is active and generating `llms.txt`, Markdown Alternate can 
 Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__return_true' );`, posts that Yoast SEO marks noindex get no `.md` URL, no query parameter fallback, no Accept redirect and no alternate link. Their links in newly generated Yoast llms.txt files keep the HTML URL. Regenerate llms.txt after enabling the filter. By default posts keep their Markdown version.
 
 == Changelog ==
+
+= Unreleased =
+* Prevented visitor-specific Markdown from entering shared caches and invalidated previously generated entries
+* Moved Markdown response handlers after default-priority access checks and canonical redirects
+* Added cache-isolation, response-header, and routing-order regression tests
 
 = 1.2.0 =
 * Added WooCommerce product metadata, formatted prices, short descriptions, visible attributes, and variations

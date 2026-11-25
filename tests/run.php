@@ -439,6 +439,8 @@ $md_alt_tests['llms.txt noindex lookups leave nested Yoast URLs unchanged withou
 	md_alt_assert_same( $url, $integration->rewrite_post_link( $url, $post ), 'guard reset after exception' );
 };
 
+require __DIR__ . '/security.php';
+
 $md_alt_failures = 0;
 foreach ( $md_alt_tests as $md_alt_name => $md_alt_test ) {
 	try {

@@ -20,6 +20,13 @@ use MarkdownAlternate\Converter\MarkdownConverter;
  */
 class ContentRenderer {
 
+	/**
+	 * Cache schema; older entries may contain another visitor's output.
+	 *
+	 * @var int
+	 */
+	private const CACHE_SCHEMA = 1;
+
     /**
      * The HTML to Markdown converter.
      *
@@ -44,18 +51,7 @@ class ContentRenderer {
 	 */
 	public function render( WP_Post $post ): string {
 		$transient_key = 'md_alt_cache_' . $post->ID;
-		/**
-		 * Filters whether rendered output can use shared caching.
-		 *
-		 * Disable for content whose output depends on the current customer.
-		 * The HTTP router also uses this to send private, no-store headers.
-		 *
-		 * @since 1.2.0
-		 *
-		 * @param bool    $enabled Whether output may be cached. Default true.
-		 * @param WP_Post $post    The post being rendered.
-		 */
-		$cache_enabled = (bool) apply_filters( 'markdown_alternate_cache_enabled', true, $post );
+		$cache_enabled = CachePolicy::is_enabled( $post );
 		$cached_data   = $cache_enabled ? get_transient( $transient_key ) : false;
 
 		/**
@@ -73,7 +69,8 @@ class ContentRenderer {
 		$cache_version = (string) apply_filters( 'markdown_alternate_cache_version', '', $post );
 
 		if ( is_array( $cached_data )
-			&& isset( $cached_data['markdown'], $cached_data['modified'], $cached_data['version'] )
+			&& isset( $cached_data['markdown'], $cached_data['modified'], $cached_data['version'], $cached_data['schema'] )
+			&& self::CACHE_SCHEMA === $cached_data['schema']
 			&& $post->post_modified === $cached_data['modified']
 			&& $cache_version === $cached_data['version']
 		) {
@@ -148,6 +145,7 @@ class ContentRenderer {
 			set_transient(
 				$transient_key,
 				array(
+					'schema'   => self::CACHE_SCHEMA,
 					'markdown' => $output,
 					'modified' => $post->post_modified,
 					'version'  => $cache_version,

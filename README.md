@@ -159,7 +159,7 @@ add_filter( 'markdown_alternate_supported_post_types', function( $types ) {
 
 ### Adjust cache duration
 
-Markdown output is cached using transients for 24 hours by default. You can change that with `markdown_alternate_cache_expiration`:
+Eligible anonymous Markdown output is cached using transients for 24 hours by default. You can change that with `markdown_alternate_cache_expiration`:
 
 ```php
 add_filter( 'markdown_alternate_cache_expiration', function( $seconds ) {
@@ -257,8 +257,17 @@ default value.
 Return `false` from `markdown_alternate_cache_enabled` to bypass both transient
 reads and writes. The filter receives the `WP_Post` as its second argument. HTTP
 responses also send private, no-store headers and mark the page as uncacheable.
-The WooCommerce integration disables this cache for products; posts and pages
-still default to cached output.
+Logged-in visitors, password-protected posts, and visitors carrying WordPress
+post-password, WooCommerce session/cart, or Easy Digital Downloads cart cookies
+always bypass shared caching. The filter cannot turn caching back on for them.
+The WooCommerce integration also disables caching for all products. Other
+anonymous requests still use the shared cache; use this filter for custom
+sessions or other visitor-dependent output.
+
+Markdown response handlers run at `template_redirect` priority 15, after the
+default-priority access checks and canonical redirects. Explicit `.md` URLs
+still skip canonical redirects; `?format=markdown` and Accept-negotiated requests
+can be normalized first. Access checks on this hook must run before priority 15.
 
 ### Invalidate integration data
 
@@ -275,15 +284,20 @@ add_filter( 'markdown_alternate_cache_version', function( $version, $post ) {
 
 Append your token to the existing value so multiple integrations can participate.
 The token is stored with the cached document; it does not change the transient key.
-Old cache entries without a version token are regenerated once. Cache duration
-continues to use `markdown_alternate_cache_expiration`.
+Old cache entries without the current cache schema are regenerated once, even
+when an integration's version token still matches, so previously cached personal
+output is not reused. Cache duration continues to use
+`markdown_alternate_cache_expiration`.
 
 ### Run renderer regression tests
 
 Run `php tests/run.php` after installing dependencies. These standalone tests use
 WordPress API doubles and the real Markdown converter, and compare default output
 with fixtures captured from `main` at commit `7afba03`. CI runs them on PHP 7.4–8.3;
-they do not replace a full WordPress integration test.
+they do not replace a full WordPress integration test. The suite also checks
+visitor isolation, old-cache invalidation, private response headers, access-check
+ordering, and canonical redirects. Router cases run in child PHP processes so
+the real handlers can terminate their responses normally.
 
 ### Run WooCommerce integration tests
 
