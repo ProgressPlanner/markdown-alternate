@@ -34,7 +34,7 @@ class MarkdownConverter {
         $this->converter = new HtmlConverter([
             'header_style'    => 'atx',
             'strip_tags'      => true,
-            'remove_nodes'    => 'script style iframe',
+			'remove_nodes'    => 'script style',
             'hard_break'      => false,
             'list_item_style' => '-',
         ]);
@@ -49,6 +49,8 @@ class MarkdownConverter {
 		// The library already ships table_pipe_escape and table_caption_side
 		// defaults for this converter — only the registration is missing.
 		$this->converter->getEnvironment()->addConverter( new TableConverter() );
+		$this->converter->getEnvironment()->addConverter( new ImageConverter() );
+		$this->converter->getEnvironment()->addConverter( new EmbedConverter() );
     }
 
     /**

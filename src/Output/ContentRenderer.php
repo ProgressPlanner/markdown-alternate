@@ -26,7 +26,7 @@ class ContentRenderer {
 	 *
 	 * @var int
 	 */
-	private const CACHE_SCHEMA = 1;
+	private const CACHE_SCHEMA = 2;
 
     /**
      * The HTML to Markdown converter.
