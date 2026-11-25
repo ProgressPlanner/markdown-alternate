@@ -256,8 +256,9 @@ class ContentRenderer {
 		/**
 		 * Filters typed frontmatter fields before YAML serialization.
 		 *
-		 * Scalar fields contain type and content. Array fields contain type
-		 * 'array' and items, a list of maps whose values are scalar fields.
+		 * Scalar fields contain type (string, url, date, number or boolean) and
+		 * content. Array fields contain type 'array' and items, a list of maps
+		 * whose values are scalar fields.
 		 * Pass unescaped values; strings and URLs are escaped once below.
 		 *
 		 * @since 1.2.0
