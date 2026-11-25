@@ -86,7 +86,7 @@ Example:
 
 = Is the output cached? =
 
-Yes. Markdown output is cached using WordPress transients for 24 hours by default. The cache is automatically bypassed if the post has changed. Developers can adjust the cache duration with the `markdown_alternate_cache_expiration` filter.
+Yes. Eligible anonymous Markdown output is cached using WordPress transients for 24 hours by default. Logged-in visitors, password-protected posts, and visitors with known session or cart cookies bypass shared caching and receive private, no-store responses. Old cache entries are regenerated after the cache-isolation fix. The cache is also regenerated if the post has changed. Developers can adjust the duration with `markdown_alternate_cache_expiration` and disable caching for custom visitor-dependent output with `markdown_alternate_cache_enabled`.
 
 = What does the Markdown output include? =
 
@@ -108,6 +108,9 @@ Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__ret
 * Changed frontmatter links to terms to absolute URLs, like the links in the body
 * Added product URL, modified date, GTIN, sale end date and ratings to WooCommerce product frontmatter
 * Removed the post author from WooCommerce product frontmatter
+* Prevented visitor-specific Markdown from entering shared caches and invalidated previously generated entries
+* Moved Markdown response handlers after default-priority access checks and canonical redirects
+* Added cache-isolation, response-header, and routing-order regression tests
 
 = 1.2.0 =
 * Added WooCommerce product metadata, formatted prices, short descriptions, visible attributes, and variations
