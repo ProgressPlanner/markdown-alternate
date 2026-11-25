@@ -278,7 +278,7 @@ class WooCommerce {
 	}
 
 	/**
-	 * Add the summary, short description, attributes and variations.
+	 * Add product details and label the long description.
 	 *
 	 * @param array   $sections Existing sections.
 	 * @param WP_Post $post     The post being rendered.
@@ -293,6 +293,9 @@ class WooCommerce {
 		$rows  = array();
 		$price = $this->format_price( $product );
 		if ( '' !== $price ) {
+			if ( 'incl' === get_option( 'woocommerce_tax_display_shop' ) && $product->is_taxable() && ( ! WC()->customer || ! WC()->customer->get_is_vat_exempt() ) ) {
+				$price .= ' ' . __( '(incl. tax)', 'markdown-alternate' );
+			}
 			$rows[] = '**' . __( 'Price:', 'markdown-alternate' ) . '** ' . $price;
 		}
 		if ( '' !== $product->get_sku() ) {
@@ -312,6 +315,9 @@ class WooCommerce {
 				'priority' => 50,
 				'markdown' => '## ' . __( 'Summary', 'markdown-alternate' ) . "\n\n" . $description,
 			);
+		}
+		if ( isset( $sections['content']['markdown'] ) && is_string( $sections['content']['markdown'] ) && '' !== trim( $sections['content']['markdown'] ) ) {
+			$sections['content']['markdown'] = '## ' . __( 'Description', 'markdown-alternate' ) . "\n\n" . $sections['content']['markdown'];
 		}
 		$attributes = $this->build_attributes( $product );
 		if ( '' !== $attributes ) {

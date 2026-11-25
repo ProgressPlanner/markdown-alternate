@@ -53,6 +53,7 @@ try {
 	update_option( 'woocommerce_currency', 'EUR' );
 	update_option( 'woocommerce_calc_taxes', 'no' );
 	update_option( 'woocommerce_prices_include_tax', 'no' );
+	update_option( 'woocommerce_tax_display_shop', 'incl' );
 	md_alt_woo_assert( PostTypeSupport::is_supported( 'product' ) && ! PostTypeSupport::is_supported( 'product_variation' ), 'Products enabled; standalone variations excluded' );
 
 	$md_alt_product = new WC_Product_Simple();
@@ -109,6 +110,34 @@ try {
 	md_alt_woo_assert( false !== strpos( $md_alt_output, '[link](https://example.com)' ) && false !== strpos( $md_alt_output, '- One' ), 'Short description keeps links and lists' );
 	md_alt_woo_assert( false === strpos( $md_alt_output, '## Attributes' ) && false === strpos( $md_alt_output, '## Variations' ), 'No empty product sections' );
 	md_alt_woo_assert( false === get_transient( 'md_alt_cache_' . $md_alt_id ), 'Product output is not stored in the shared cache' );
+	md_alt_woo_assert( false === strpos( $md_alt_output, '(incl. tax)' ), 'Disabled taxes do not add a tax-inclusive label' );
+	md_alt_woo_assert( false !== strpos( $md_alt_output, "## Summary\n\nShort" ) && false !== strpos( $md_alt_output, "## Description\n\nLong **description**." ), 'Short and long descriptions have separate headings and preserve formatting' );
+	$md_alt_short_description = $md_alt_product->get_short_description();
+	$md_alt_product->set_short_description( '' );
+	$md_alt_product->save();
+	$md_alt_output = md_alt_woo_render( $md_alt_id );
+	md_alt_woo_assert( false === strpos( $md_alt_output, '## Summary' ) && false !== strpos( $md_alt_output, '## Description' ), 'Long description has a heading without a short description' );
+	$md_alt_product->set_description( '' );
+	$md_alt_product->save();
+	md_alt_woo_assert( false === strpos( md_alt_woo_render( $md_alt_id ), '## Description' ), 'Empty long description has no heading' );
+	$md_alt_product->set_description( '<p>Long <strong>description</strong>.</p>' );
+	$md_alt_product->set_short_description( $md_alt_short_description );
+	$md_alt_product->save();
+	$md_alt_content_filter = static function ( $sections ) {
+		$sections['content'] = array(
+			'priority' => 125,
+			'markdown' => 'Custom description.',
+		);
+		return $sections;
+	};
+	add_filter( 'markdown_alternate_content_sections', $md_alt_content_filter, 5 );
+	$md_alt_sections = apply_filters( 'markdown_alternate_content_sections', array(), get_post( $md_alt_id ) );
+	remove_filter( 'markdown_alternate_content_sections', $md_alt_content_filter, 5 );
+	md_alt_woo_assert( 125 === $md_alt_sections['content']['priority'] && "## Description\n\nCustom description." === $md_alt_sections['content']['markdown'], 'Description heading preserves custom rendered content and priority' );
+	$md_alt_sections = apply_filters( 'markdown_alternate_content_sections', array(), get_post( $md_alt_id ) );
+	md_alt_woo_assert( ! isset( $md_alt_sections['content'] ), 'Removed long description is not restored' );
+	$md_alt_sections = apply_filters( 'markdown_alternate_content_sections', array( 'content' => array( 'markdown' => " \n\t" ) ), get_post( $md_alt_id ) );
+	md_alt_woo_assert( " \n\t" === $md_alt_sections['content']['markdown'], 'Whitespace-only long description has no heading' );
 
 	$md_alt_product->set_date_on_sale_from( time() + DAY_IN_SECONDS );
 	$md_alt_product->set_price( '20' );
@@ -223,7 +252,17 @@ try {
 	WC()->customer->set_billing_country( 'NL' );
 	WC()->customer->set_shipping_country( 'NL' );
 	$md_alt_output = md_alt_woo_render( $md_alt_id );
-	md_alt_woo_assert( false !== strpos( $md_alt_output, '24.20' ), 'Displayed price includes shop tax settings' );
+	md_alt_woo_assert( false !== strpos( $md_alt_output, '**Price:** €24.20 (incl. tax)' ) && false !== strpos( $md_alt_output, "prices_include_tax: false\n" ), 'Tax-inclusive displayed price is labeled independently of catalog tax settings' );
+	update_option( 'woocommerce_tax_display_shop', 'excl' );
+	$md_alt_output = md_alt_woo_render( $md_alt_id );
+	md_alt_woo_assert( false !== strpos( $md_alt_output, '**Price:** €20.00' ) && false === strpos( $md_alt_output, '(incl. tax)' ), 'Tax-exclusive displayed price has no inclusive label' );
+	update_option( 'woocommerce_tax_display_shop', 'incl' );
+	foreach ( array( 'none', 'shipping' ) as $md_alt_tax_status ) {
+		$md_alt_product->set_tax_status( $md_alt_tax_status );
+		$md_alt_product->save();
+		md_alt_woo_assert( false === strpos( md_alt_woo_render( $md_alt_id ), '(incl. tax)' ), 'Non-taxable product price has no inclusive label: ' . $md_alt_tax_status );
+	}
+	$md_alt_product->set_tax_status( 'taxable' );
 	// Tax-inclusive catalog prices exercise exemption consistently on older WooCommerce too.
 	update_option( 'woocommerce_prices_include_tax', 'yes' );
 	$md_alt_product->set_regular_price( '24.20' );
@@ -231,7 +270,7 @@ try {
 	$md_alt_product->save();
 	WC()->customer->set_is_vat_exempt( true );
 	$md_alt_output = md_alt_woo_render( $md_alt_id );
-	md_alt_woo_assert( false !== strpos( $md_alt_output, '**Price:** €20.00' ), 'VAT-exempt customer receives their own displayed price' );
+	md_alt_woo_assert( false !== strpos( $md_alt_output, '**Price:** €20.00' ) && false === strpos( $md_alt_output, '(incl. tax)' ), 'VAT-exempt customer receives their own displayed price without an inclusive label' );
 	md_alt_woo_assert( false !== strpos( $md_alt_output, "prices_include_tax: true\n" ) && false !== strpos( $md_alt_output, "price: 24.20\n" ), 'Tax-inclusive catalog prices are flagged in frontmatter' );
 
 	$md_alt_post_id   = wp_insert_post(
@@ -244,6 +283,7 @@ try {
 	$md_alt_woo_ids[] = $md_alt_post_id;
 	$md_alt_output    = md_alt_woo_render( $md_alt_post_id );
 	md_alt_woo_assert( false !== get_transient( 'md_alt_cache_' . $md_alt_post_id ) && false === strpos( $md_alt_output, 'product_type:' ), 'Ordinary post output still cached without product metadata' );
+	md_alt_woo_assert( false === strpos( $md_alt_output, '## Description' ), 'Ordinary posts do not receive a product description heading' );
 	if ( getenv( 'MD_ALT_TEST_HTTP' ) ) {
 		$md_alt_permalink = get_permalink( $md_alt_id );
 		$md_alt_md_url    = untrailingslashit( $md_alt_permalink ) . '.md';
