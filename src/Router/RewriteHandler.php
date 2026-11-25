@@ -11,6 +11,7 @@ use WP_Post;
 use WP_Term;
 use MarkdownAlternate\Output\ContentRenderer;
 use MarkdownAlternate\Output\TermRenderer;
+use MarkdownAlternate\Output\CachePolicy;
 use MarkdownAlternate\PostTypeSupport;
 use MarkdownAlternate\TaxonomySupport;
 
@@ -52,10 +53,11 @@ class RewriteHandler {
         add_action('parse_request', [$this, 'parse_markdown_url']);
         // Prevent canonical redirect for .md URLs
         add_filter('redirect_canonical', [$this, 'prevent_markdown_redirect'], 10, 2);
-        // Order: format parameter -> Accept negotiation -> markdown request (URL wins first)
-        add_action('template_redirect', [$this, 'handle_format_parameter'], 1);
-        add_action('template_redirect', [$this, 'handle_accept_negotiation'], 1);
-        add_action('template_redirect', [$this, 'handle_markdown_request'], 1);
+		// Run after default-priority access checks and canonical redirects.
+		// Keep format -> Accept -> .md ordering; explicit .md URLs win.
+		add_action( 'template_redirect', array( $this, 'handle_format_parameter' ), 15 );
+		add_action( 'template_redirect', array( $this, 'handle_accept_negotiation' ), 15 );
+		add_action( 'template_redirect', array( $this, 'handle_markdown_request' ), 15 );
     }
 
     /**
@@ -263,7 +265,7 @@ class RewriteHandler {
 		 * @param bool    $enabled Whether output may be cached. Default true.
 		 * @param WP_Term $term    The term being served.
 		 */
-		if ( ! apply_filters( 'markdown_alternate_term_cache_enabled', true, $term ) ) {
+		if ( ! CachePolicy::is_public_request() || ! apply_filters( 'markdown_alternate_term_cache_enabled', true, $term ) ) {
 			nocache_headers();
 			header( 'Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0' );
 			if ( ! defined( 'DONOTCACHEPAGE' ) ) {
@@ -342,7 +344,7 @@ class RewriteHandler {
         }
 
 		// Keep customer-dependent output out of HTTP and WordPress page caches too.
-		if ( ! apply_filters( 'markdown_alternate_cache_enabled', true, $post ) ) {
+		if ( ! CachePolicy::is_enabled( $post ) ) {
 			nocache_headers();
 			header( 'Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0' );
 			if ( ! defined( 'DONOTCACHEPAGE' ) ) {

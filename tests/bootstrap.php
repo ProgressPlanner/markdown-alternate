@@ -16,6 +16,7 @@ class WP_Post {
 	public $post_title    = 'Post Title';
 	public $post_content  = '<p>Hello <strong>world</strong>.</p>';
 	public $post_type     = 'post';
+	public $post_password = '';
 }
 
 class WP_Term {
@@ -32,7 +33,9 @@ class WP_Error {}
 define( 'DAY_IN_SECONDS', 86400 );
 
 function md_alt_test_reset() {
+	$_COOKIE                      = array();
 	$GLOBALS['md_alt_test_state'] = array(
+		'logged_in'   => false,
 		'filters'     => array(),
 		'cache'       => array(),
 		'expiration'  => array(),
@@ -45,6 +48,24 @@ function md_alt_test_reset() {
 		'posts'       => array(),
 		'yoast_calls' => 0,
 	);
+}
+
+function is_user_logged_in() {
+	return $GLOBALS['md_alt_test_state']['logged_in'];
+}
+
+function add_action( $tag, $callback, $priority = 10, $accepted_args = 1 ) {
+	add_filter( $tag, $callback, $priority, $accepted_args );
+}
+
+function do_action( $tag, ...$args ) {
+	$priorities = $GLOBALS['md_alt_test_state']['filters'][ $tag ] ?? array();
+	ksort( $priorities );
+	foreach ( $priorities as $callbacks ) {
+		foreach ( $callbacks as list( $callback, $accepted_args ) ) {
+			$callback( ...array_slice( $args, 0, $accepted_args ) );
+		}
+	}
 }
 
 function get_post( $post ) {
