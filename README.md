@@ -130,12 +130,15 @@ SKU, GTIN (WooCommerce 9.2+), currency, product type, prices, sale end date,
 stock, and rating with review count (when ratings are enabled and the product has
 reviews); the post author is left out. It also includes product categories, tags,
 and registered brands; a price/availability summary; the formatted short
-description; visible attributes; and available
-variations. Password protection and publication checks still apply.
+description under `Summary`; the long description under `Description`; visible
+attributes; and available variations. Password protection and publication checks
+still apply.
 
 The body uses WooCommerce's displayed prices, including tax settings, currency,
-price ranges, active sales, and pricing filters. Numeric frontmatter prices are
-catalog values before display-tax adjustments, so they do not depend on who
+price ranges, active sales, and pricing filters. The product's price line adds
+`(incl. tax)` when shop prices include tax and the product is taxable, except for
+VAT-exempt customers. Numeric frontmatter prices are catalog values before
+display-tax adjustments, so they do not depend on who
 requests the page; `prices_include_tax` says whether those values include tax.
 Variable products use `price` and `price_max` for the minimum and maximum catalog
 prices. A future sale is not reported as an active sale. SKUs in the body are
