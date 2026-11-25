@@ -68,7 +68,17 @@ class Plugin {
         );
 
         add_action( 'plugins_loaded', [ $this, 'register_integrations' ] );
+		add_action( 'init', array( $this, 'load_translations' ) );
     }
+
+	/**
+	 * Register bundled translations once WordPress has initialized.
+	 *
+	 * @return void
+	 */
+	public function load_translations(): void {
+		load_plugin_textdomain( 'markdown-alternate', false, dirname( plugin_basename( MARKDOWN_ALTERNATE_FILE ) ) . '/languages' );
+	}
 
     /**
      * Register integrations with third-party plugins.
