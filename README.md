@@ -227,6 +227,43 @@ add_filter( 'markdown_alternate_supported_taxonomies', function( $taxonomies ) {
 Term archives are not stored in the Markdown transient cache: they change
 whenever a post is published in them.
 
+### Exclude categories or tags from frontmatter
+
+Use `markdown_alternate_frontmatter_terms` to remove individual assigned terms
+from post, page, or product metadata. It receives an array of `WP_Term` objects,
+the taxonomy name, and the post. Return an empty array to omit the field entirely.
+For example, exclude category IDs 12 and 34:
+
+```php
+add_filter( 'markdown_alternate_frontmatter_terms', function( $terms, $taxonomy, $post ) {
+    if ( 'category' !== $taxonomy ) {
+        return $terms;
+    }
+    return array_filter( $terms, function( $term ) {
+        return ! in_array( $term->term_id, array( 12, 34 ), true );
+    } );
+}, 10, 3 );
+```
+
+To omit terms that Yoast SEO marks noindex, use its effective robots value through
+the plugin's helper instead:
+
+```php
+add_filter( 'markdown_alternate_frontmatter_terms', function( $terms ) {
+    return array_filter( $terms, function( $term ) {
+        return ! \MarkdownAlternate\TaxonomySupport::is_noindexed( $term );
+    } );
+} );
+```
+
+Without Yoast active, that example retains all terms. These filters affect only
+post frontmatter; use `markdown_alternate_skip_noindexed_terms` separately to
+withhold noindexed term archives. Returning a non-array keeps the original list;
+non-term entries in a returned array are ignored. The filter runs only when the
+document is regenerated. Delete affected `md_alt_cache_{post_id}` transients or
+change `markdown_alternate_cache_version` after changing exclusion rules or term
+indexing settings, as described below.
+
 ### Extend frontmatter
 
 The rendering filters receive the current `WP_Post` as their second argument.
