@@ -61,7 +61,7 @@ jobs:
           grep -q '^\* ' "$RUNNER_TEMP/release-notes.md"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
 
-      # vendor/ is committed and shipped as it is; it must hold no dev packages.
+      # vendor/ is committed; runtime files must hold no dev packages.
       - name: Check committed vendor has no dev packages
         run: .github/scripts/check-vendor.sh
 
@@ -83,8 +83,8 @@ jobs:
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       # Scan the packaged files, so the SBOM describes what the ZIP contains.
-      # Syft reads vendor/composer/installed.json and the production packages in
-      # composer.lock; at this version it leaves out the lock's packages-dev.
+      # Syft reads vendor/composer/installed.json; development manifests are
+      # excluded from the package. Keep installed.json for dependency metadata.
       - name: Generate SBOM
         env:
           RELEASE_TAG: ${{ github.ref_name }}
@@ -93,6 +93,7 @@ jobs:
           cd "$RUNNER_TEMP/package"
           syft "dir:markdown-alternate" \
             --source-name markdown-alternate --source-version "$VERSION" \
+            --select-catalogers +php-composer-installed-cataloger \
             -o "cyclonedx-json=$RUNNER_TEMP/dist/sbom-$RELEASE_TAG.json"
 
       - name: Write checksums

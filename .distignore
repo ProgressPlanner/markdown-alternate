@@ -1,18 +1,22 @@
-# Files left out of the release ZIP built by .github/workflows/release.yml.
-# Patterns start with a slash so they only match at the plugin root and leave
-# vendor/ exactly as committed. This list does not affect GitHub's own source
-# archives of a tag.
+# Files excluded from the release ZIP; keep in sync with .gitattributes.
+# Composer runtime metadata, licenses and translations remain included.
 .DS_Store
+/.git
 /.claude
 /.distignore
 /.env
 /.env.example
-/.git
-/.github
+/.gitattributes
 /.gitignore
+/.github
 /.planning
 /bin
 /logs
+/tests
+/composer.json
+/composer.lock
 /phpstan-baseline.neon
 /phpstan.neon.dist
-/tests
+/vendor/**/.github
+/vendor/**/composer.json
+/vendor/**/phpstan.neon.dist

@@ -80,6 +80,15 @@ cd markdown-alternate
 composer install
 ```
 
+### Release packaging
+
+Automatic updates use GitHub's source archive, which applies `.gitattributes`
+`export-ignore` rules. The attached release ZIP uses `.distignore`. Keep these
+exclusion lists in sync: development files, Composer manifests, and dependency
+GitHub configuration are omitted from both downloads. Runtime PHP, Composer's
+generated autoloader and installed-package metadata, licenses, and translations
+remain included. The release SBOM reads `vendor/composer/installed.json`.
+
 ## Usage
 
 ### 1. Use `.md` URLs

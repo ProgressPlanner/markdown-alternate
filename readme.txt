@@ -103,6 +103,7 @@ Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__ret
 == Changelog ==
 
 = Unreleased =
+* Excluded development files from GitHub source archives and release ZIPs while retaining runtime dependencies, licenses, and translations.
 * Added a translation template and loading support for contributed translations.
 * Label tax-inclusive displayed product prices and give long product descriptions their own heading.
 * Kept author and date archives in HTML instead of redirecting Markdown requests to missing pages
