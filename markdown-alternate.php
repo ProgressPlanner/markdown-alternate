@@ -11,6 +11,7 @@
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: markdown-alternate
+ * Domain Path: /languages
  */
 
 if (!defined('ABSPATH')) {

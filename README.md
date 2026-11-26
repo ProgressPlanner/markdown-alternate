@@ -339,6 +339,29 @@ when an integration's version token still matches, so previously cached personal
 output is not reused. Cache duration continues to use
 `markdown_alternate_cache_expiration`.
 
+### Contribute translations
+
+The plugin loads translations from `languages/` using the `markdown-alternate`
+text domain. Create a translation from `languages/markdown-alternate.pot` in a
+gettext editor, then contribute both `markdown-alternate-LOCALE.po` and its
+compiled `markdown-alternate-LOCALE.mo` file, for example
+`markdown-alternate-nl_NL.po` and `markdown-alternate-nl_NL.mo`.
+Keep format placeholders such as `%s` and `%1$d` intact. The template alone does
+not translate the plugin; a matching locale file is required.
+
+After changing translatable strings, regenerate the template from the repository
+root with WP-CLI:
+
+```bash
+wp i18n make-pot . languages/markdown-alternate.pot --slug=markdown-alternate --domain=markdown-alternate --exclude=vendor,tests --skip-js --headers='{"Report-Msgid-Bugs-To":"https://github.com/ProgressPlanner/markdown-alternate/issues"}'
+```
+
+Compile a contributed translation with:
+
+```bash
+wp i18n make-mo languages/markdown-alternate-nl_NL.po
+```
+
 ### Run renderer regression tests
 
 Run `php tests/run.php` after installing dependencies. These standalone tests use
