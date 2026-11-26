@@ -64,6 +64,14 @@ $GLOBALS['md_alt_noindexed_terms'] = array();
 $md_alt_term_home                  = static function ( $home ) {
 	return rtrim( $home, '/' ) . '/blog';
 };
+$md_alt_term_exclusions            = static function ( $terms ) {
+	return array_filter(
+		$terms,
+		static function ( $term ) {
+			return ! TaxonomySupport::is_noindexed( $term );
+		}
+	);
+};
 $md_alt_term_types                 = static function () {
 	return array( 'page' );
 };
@@ -165,6 +173,15 @@ try {
 	$md_alt_post_output = ( new ContentRenderer() )->render( get_post( $md_alt_term_post_id ) );
 	md_alt_term_assert( false === strpos( $md_alt_post_output, '.md"' ) && false !== strpos( $md_alt_post_output, $md_alt_term_child->slug . '/"' ), 'Post frontmatter links withheld terms to HTML' );
 	remove_filter( 'markdown_alternate_skip_noindexed_terms', '__return_true' );
+	add_filter( 'markdown_alternate_frontmatter_terms', $md_alt_term_exclusions );
+	delete_transient( 'md_alt_cache_' . $md_alt_term_post_id );
+	$md_alt_post_output = ( new ContentRenderer() )->render( get_post( $md_alt_term_post_id ) );
+	md_alt_term_assert( false === strpos( $md_alt_post_output, 'categories:' ), 'Noindexed terms can be omitted from frontmatter independently of archive routing' );
+	$GLOBALS['md_alt_noindexed_terms'] = array();
+	delete_transient( 'md_alt_cache_' . $md_alt_term_post_id );
+	$md_alt_post_output = ( new ContentRenderer() )->render( get_post( $md_alt_term_post_id ) );
+	md_alt_term_assert( false !== strpos( $md_alt_post_output, $md_alt_child_md ), 'Indexed terms remain in frontmatter' );
+	remove_filter( 'markdown_alternate_frontmatter_terms', $md_alt_term_exclusions );
 
 	md_alt_term_assert( false !== strpos( $md_alt_term_renderer->render( $md_alt_term_child ), '[Archive regression post](' ), 'Supported posts appear in archives' );
 	add_filter( 'markdown_alternate_supported_post_types', $md_alt_term_types, 100 );
@@ -173,6 +190,7 @@ try {
 	remove_filter( 'markdown_alternate_supported_post_types', $md_alt_term_types, 100 );
 	WP_CLI::success( 'Term archive regression tests passed.' );
 } finally {
+	remove_filter( 'markdown_alternate_frontmatter_terms', $md_alt_term_exclusions );
 	remove_filter( 'option_home', $md_alt_term_home );
 	remove_filter( 'markdown_alternate_skip_noindexed_terms', '__return_true' );
 	remove_filter( 'markdown_alternate_supported_post_types', $md_alt_term_types, 100 );
