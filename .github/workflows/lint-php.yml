@@ -36,3 +36,7 @@ jobs:
 
       - name: Test rendering hooks
         run: php tests/run.php
+
+      - name: Test distributable archives
+        if: matrix.php == '8.3'
+        run: bash tests/package.sh

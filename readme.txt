@@ -119,6 +119,8 @@ Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__ret
 * Moved Markdown response handlers after default-priority access checks and canonical redirects
 * Added cache-isolation, response-header, and routing-order regression tests
 
+* Excluded development files from GitHub source archives and release ZIPs while retaining runtime dependencies, licenses, and translations.
+
 = 1.2.0 =
 * Added WooCommerce product metadata, formatted prices, short descriptions, visible attributes, and variations
 * Bypassed shared and HTTP caching for customer-dependent product output
