@@ -95,6 +95,9 @@ jobs:
             --source-name markdown-alternate --source-version "$VERSION" \
             --select-catalogers +php-composer-installed-cataloger \
             -o "cyclonedx-json=$RUNNER_TEMP/dist/sbom-$RELEASE_TAG.json"
+          jq -r '.packages[] | [.name, .version] | @tsv' markdown-alternate/vendor/composer/installed.json | sort > "$RUNNER_TEMP/expected-packages.tsv"
+          jq -r '.components[] | select((.purl // "") | startswith("pkg:composer/")) | [.name, .version] | @tsv' "$RUNNER_TEMP/dist/sbom-$RELEASE_TAG.json" | sort > "$RUNNER_TEMP/sbom-packages.tsv"
+          diff -u "$RUNNER_TEMP/expected-packages.tsv" "$RUNNER_TEMP/sbom-packages.tsv"
 
       - name: Write checksums
         run: |
