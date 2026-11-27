@@ -1,0 +1,93 @@
+# Copyright (C) 2026 Joost de Valk
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Markdown Alternate 1.3.0\n"
+"Report-Msgid-Bugs-To: https://github.com/ProgressPlanner/markdown-alternate/issues\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-11-25T19:51:04+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: markdown-alternate\n"
+
+#. Plugin Name of the plugin
+#: markdown-alternate.php
+msgid "Markdown Alternate"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: markdown-alternate.php
+msgid "https://github.com/ProgressPlanner/markdown-alternate"
+msgstr ""
+
+#. Description of the plugin
+#: markdown-alternate.php
+msgid "Provides markdown versions of posts and pages via .md URLs"
+msgstr ""
+
+#. Author of the plugin
+#: markdown-alternate.php
+msgid "Joost de Valk"
+msgstr ""
+
+#. Author URI of the plugin
+#: markdown-alternate.php
+msgid "https://joost.blog"
+msgstr ""
+
+#: src/Integration/WooCommerce.php:297
+msgid "(incl. tax)"
+msgstr ""
+
+#: src/Integration/WooCommerce.php:299
+msgid "Price:"
+msgstr ""
+
+#: src/Integration/WooCommerce.php:302
+#: src/Integration/WooCommerce.php:391
+msgid "SKU:"
+msgstr ""
+
+#: src/Integration/WooCommerce.php:306
+msgid "Availability:"
+msgstr ""
+
+#: src/Integration/WooCommerce.php:316
+msgid "Summary"
+msgstr ""
+
+#: src/Integration/WooCommerce.php:320
+msgid "Description"
+msgstr ""
+
+#: src/Integration/WooCommerce.php:359
+msgid "Attributes"
+msgstr ""
+
+#. translators: %s: product attribute label, such as Size.
+#: src/Integration/WooCommerce.php:378
+#, php-format
+msgid "Any %s"
+msgstr ""
+
+#: src/Integration/WooCommerce.php:395
+msgid "Variations"
+msgstr ""
+
+#: src/Output/TermRenderer.php:251
+msgid "Subcategories"
+msgstr ""
+
+#: src/Output/TermRenderer.php:290
+msgid "Posts"
+msgstr ""
+
+#. translators: 1: number of posts listed, 2: total number of posts, 3: Markdown link to the HTML archive.
+#: src/Output/TermRenderer.php:296
+#, php-format
+msgid "Showing %1$d of %2$d. All of them: %3$s"
+msgstr ""

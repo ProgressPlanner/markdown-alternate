@@ -80,6 +80,15 @@ cd markdown-alternate
 composer install
 ```
 
+### Release packaging
+
+Automatic updates use GitHub's source archive, which applies `.gitattributes`
+`export-ignore` rules. The attached release ZIP uses `.distignore`. Keep these
+exclusion lists in sync: development files, Composer manifests, and dependency
+GitHub configuration are omitted from both downloads. Runtime PHP, Composer's
+generated autoloader and installed-package metadata, licenses, and translations
+remain included. The release SBOM reads `vendor/composer/installed.json`.
+
 ## Usage
 
 ### 1. Use `.md` URLs
@@ -235,6 +244,43 @@ add_filter( 'markdown_alternate_supported_taxonomies', function( $taxonomies ) {
 Term archives are not stored in the Markdown transient cache: they change
 whenever a post is published in them.
 
+### Exclude categories or tags from frontmatter
+
+Use `markdown_alternate_frontmatter_terms` to remove individual assigned terms
+from post, page, or product metadata. It receives an array of `WP_Term` objects,
+the taxonomy name, and the post. Return an empty array to omit the field entirely.
+For example, exclude category IDs 12 and 34:
+
+```php
+add_filter( 'markdown_alternate_frontmatter_terms', function( $terms, $taxonomy, $post ) {
+    if ( 'category' !== $taxonomy ) {
+        return $terms;
+    }
+    return array_filter( $terms, function( $term ) {
+        return ! in_array( $term->term_id, array( 12, 34 ), true );
+    } );
+}, 10, 3 );
+```
+
+To omit terms that Yoast SEO marks noindex, use its effective robots value through
+the plugin's helper instead:
+
+```php
+add_filter( 'markdown_alternate_frontmatter_terms', function( $terms ) {
+    return array_filter( $terms, function( $term ) {
+        return ! \MarkdownAlternate\TaxonomySupport::is_noindexed( $term );
+    } );
+} );
+```
+
+Without Yoast active, that example retains all terms. These filters affect only
+post frontmatter; use `markdown_alternate_skip_noindexed_terms` separately to
+withhold noindexed term archives. Returning a non-array keeps the original list;
+non-term entries in a returned array are ignored. The filter runs only when the
+document is regenerated. Delete affected `md_alt_cache_{post_id}` transients or
+change `markdown_alternate_cache_version` after changing exclusion rules or term
+indexing settings, as described below.
+
 ### Extend frontmatter
 
 The rendering filters receive the current `WP_Post` as their second argument.
@@ -346,6 +392,29 @@ Old cache entries without the current cache schema are regenerated once, even
 when an integration's version token still matches, so previously cached personal
 output is not reused. Cache duration continues to use
 `markdown_alternate_cache_expiration`.
+
+### Contribute translations
+
+The plugin loads translations from `languages/` using the `markdown-alternate`
+text domain. Create a translation from `languages/markdown-alternate.pot` in a
+gettext editor, then contribute both `markdown-alternate-LOCALE.po` and its
+compiled `markdown-alternate-LOCALE.mo` file, for example
+`markdown-alternate-nl_NL.po` and `markdown-alternate-nl_NL.mo`.
+Keep format placeholders such as `%s` and `%1$d` intact. The template alone does
+not translate the plugin; a matching locale file is required.
+
+After changing translatable strings, regenerate the template from the repository
+root with WP-CLI:
+
+```bash
+wp i18n make-pot . languages/markdown-alternate.pot --slug=markdown-alternate --domain=markdown-alternate --exclude=vendor,tests --skip-js --headers='{"Report-Msgid-Bugs-To":"https://github.com/ProgressPlanner/markdown-alternate/issues"}'
+```
+
+Compile a contributed translation with:
+
+```bash
+wp i18n make-mo languages/markdown-alternate-nl_NL.po
+```
 
 ### Run renderer regression tests
 

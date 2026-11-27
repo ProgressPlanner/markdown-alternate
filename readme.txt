@@ -4,7 +4,7 @@ Tags: markdown, llm, ai, content, api
 Requires at least: 6.0
 Tested up to: 7.2
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -103,21 +103,34 @@ Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__ret
 == Changelog ==
 
 = Unreleased =
-* Label tax-inclusive displayed product prices and give long product descriptions their own heading.
-* Kept author and date archives in HTML instead of redirecting Markdown requests to missing pages
-* Fixed cover block images running into the first inner heading
-* Omitted aria-hidden and data-URI images from Markdown
-* Preserved iframe embeds as links instead of dropping their content
-* Added Markdown versions of category and tag archives, and of WooCommerce product category, tag and brand archives
-* Changed frontmatter links to terms of taxonomies that are not served to point to their HTML archive instead of a `.md` URL that returned 404
-* Changed frontmatter links to terms to absolute URLs, like the links in the body
-* Added product URL, modified date, GTIN, sale end date and ratings to WooCommerce product frontmatter
-* Removed the post author from WooCommerce product frontmatter
-* Prevented visitor-specific Markdown from entering shared caches and invalidated previously generated entries
-* Moved Markdown response handlers after default-priority access checks and canonical redirects
-* Added cache-isolation, response-header, and routing-order regression tests
 * Added the `markdown_alternate_is_noindexed` filter, to mark posts noindexed by other means than Yoast SEO
 * With `markdown_alternate_skip_noindexed` on, the WooCommerce cart, checkout and My account pages get no Markdown version
+
+= 1.3.0 =
+* Security: Prevented logged-in, password-protected, and known session-specific Markdown from entering shared caches; invalidated older cached documents and sent private, no-store headers for personalized post and archive responses.
+* Moved Markdown response handlers to template_redirect priority 15, after default-priority access checks and canonical redirects, while retaining the canonical-redirect exemption for explicit .md URLs.
+* Added Markdown category, tag, and WooCommerce product category, tag, and brand archives, including query-parameter and Accept-header access and alternate discovery links.
+* Added archive metadata, descriptions, parent and child term links, and published post listings with a configurable default limit of 100 and a link to the full HTML archive.
+* Added archive extension filters for supported taxonomies, frontmatter, body sections, queries, list items, post limits, and HTTP cache eligibility.
+* Added opt-in exclusion of Yoast-noindexed term archives, with HTML links retained for withheld archives and noindexed posts.
+* Made product archive listings respect catalog visibility, hidden out-of-stock settings, and menu-order/title sorting; included displayed prices, availability, and currency, with shared HTTP caching disabled.
+* Handled nested term paths and WordPress installations in subdirectories, rejected mismatched archive paths, and kept archives empty when no supported post types remain.
+* Changed frontmatter term URLs to absolute URLs and used HTML links for taxonomies without Markdown support instead of links to missing .md pages.
+* Added markdown_alternate_frontmatter_terms for excluding individual categories, tags, and product terms, with examples for category IDs, Yoast noindex, and cache invalidation.
+* Kept author and date archives in HTML instead of redirecting Markdown requests to missing pages.
+* Added product URL, modified date, GTIN/global identifier, active-sale end date, average rating, and review count to WooCommerce frontmatter when available; retained compatibility with older WooCommerce versions.
+* Removed the shop-user author field from product frontmatter.
+* Labeled displayed tax-inclusive product prices and gave nonempty long product descriptions their own heading.
+* Fixed cover block images running into the first inner heading.
+* Omitted aria-hidden images, images inside hidden containers, and data-URI images from Markdown while retaining surrounding text.
+* Preserved iframe embeds as links, including titles and captions, while rejecting unsafe URL schemes and leaving image and iframe code examples unchanged.
+* Added a translation template, bundled language loading, and instructions for contributing and compiling translations; no completed translations are bundled yet.
+* Shared YAML frontmatter and body-section formatting between post and archive renderers.
+* Added regression coverage for visitor cache isolation, response headers, routing order, archives, conversion, term exclusions, and WooCommerce metadata and display behavior.
+* Excluded development files and Composer manifests from GitHub source archives and release ZIPs while retaining runtime dependencies, licenses, and translations; added archive comparison and dependency smoke checks.
+* Added automated GitHub release packaging with an installable ZIP, checksums, and a CycloneDX software bill of materials, including verification of all shipped Composer dependencies.
+* Added PHPStan analysis, development-dependency safeguards for committed vendor files, automated WordPress version checks, and pinned plugin readme previews in CI.
+* Updated WordPress compatibility metadata and clarified the trailing-slash handling in the installation URL example.
 
 = 1.2.0 =
 * Added WooCommerce product metadata, formatted prices, short descriptions, visible attributes, and variations

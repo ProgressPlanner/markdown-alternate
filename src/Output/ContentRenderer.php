@@ -234,6 +234,31 @@ class ContentRenderer {
 		foreach ( $taxonomies as $taxonomy => $key ) {
 			$terms = get_the_terms( $post->ID, $taxonomy );
 			if ( $terms && ! is_wp_error( $terms ) ) {
+				/**
+				 * Filters the terms included in a post's taxonomy frontmatter.
+				 *
+				 * Return an empty array to omit this taxonomy's field. This does
+				 * not disable term archives or exclude posts from those archives.
+				 * Runs only when the Markdown document is regenerated.
+				 *
+				 * @since 1.3.0
+				 *
+				 * @param mixed   $terms    Array of WP_Term objects; non-arrays keep the assigned terms.
+				 * @param string  $taxonomy Taxonomy name.
+				 * @param WP_Post $post     The post being rendered.
+				 */
+				$filtered_terms = apply_filters( 'markdown_alternate_frontmatter_terms', $terms, $taxonomy, $post );
+				if ( is_array( $filtered_terms ) ) {
+					$terms = array_filter(
+						$filtered_terms,
+						static function ( $term ) {
+							return $term instanceof \WP_Term;
+						}
+					);
+				}
+				if ( empty( $terms ) ) {
+					continue;
+				}
 				$content_lines[ $key ]['type']  = 'array';
 				$content_lines[ $key ]['items'] = array();
 				foreach ( $terms as $term ) {
