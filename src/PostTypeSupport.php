@@ -80,7 +80,7 @@ class PostTypeSupport {
 		 *
 		 * Only consulted when the site opts in with markdown_alternate_skip_noindexed.
 		 *
-		 * @since 1.3.0
+		 * @since 1.3.1
 		 *
 		 * @param bool     $noindexed Whether Yoast SEO marks the post noindex.
 		 * @param \WP_Post $post      The post being checked.
