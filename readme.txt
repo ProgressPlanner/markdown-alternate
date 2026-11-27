@@ -102,6 +102,10 @@ Yes, as an opt-in. With `add_filter( 'markdown_alternate_skip_noindexed', '__ret
 
 == Changelog ==
 
+= Unreleased =
+* Added the `markdown_alternate_is_noindexed` filter, to mark posts noindexed by other means than Yoast SEO
+* With `markdown_alternate_skip_noindexed` on, the WooCommerce cart, checkout and My account pages get no Markdown version
+
 = 1.3.0 =
 * Security: Prevented logged-in, password-protected, and known session-specific Markdown from entering shared caches; invalidated older cached documents and sent private, no-store headers for personalized post and archive responses.
 * Moved Markdown response handlers to template_redirect priority 15, after default-priority access checks and canonical redirects, while retaining the canonical-redirect exemption for explicit .md URLs.

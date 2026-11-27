@@ -145,6 +145,12 @@ parameters:
 			path: src/Integration/WooCommerce.php
 
 		-
+			message: '#^Function wc_get_page_id not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/Integration/WooCommerce.php
+
+		-
 			message: '#^Function wc_get_product not found\.$#'
 			identifier: function.notFound
 			count: 1
